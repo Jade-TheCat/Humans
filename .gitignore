@@ -21,3 +21,5 @@ build
 eclipse
 run
 .floo*
+.vscode
+secrets.properties

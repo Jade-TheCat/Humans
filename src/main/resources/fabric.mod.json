@@ -1,29 +1,32 @@
 {
   "schemaVersion": 1,
-  "id": "modid",
+  "id": "humans",
   "version": "${version}",
 
-  "name": "Example Mod",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "name": "Humans",
+  "description": "A mod that brings back a cut mob with new functionality",
   "authors": [
-    "Me!"
+    "JadeTheCat"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "https://jadethecat.dev/",
+    "sources": "https://github.com/Jade-TheCat/Humans"
   },
 
-  "license": "CC0-1.0",
-  "icon": "assets/modid/icon.png",
+  "license": "MIT",
+  "icon": "assets/humans/icon.png",
 
   "environment": "*",
   "entrypoints": {
     "main": [
-      "net.fabricmc.example.ExampleMod"
+      "dev.jadethecat.humans.Humans"
+    ],
+    "client": [
+      "dev.jadethecat.humans.client.HumansClient"
     ]
   },
   "mixins": [
-    "modid.mixins.json"
+    "humans.mixins.json"
   ],
 
   "depends": {
