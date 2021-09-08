@@ -20,7 +20,7 @@ public class HumanEntityRenderer extends MobEntityRenderer<HumanEntity, PlayerEn
 
     @Override
     public Identifier getTexture(HumanEntity entity) {
-       return new Identifier("humans", "textures/entity/human/steve.png");
+       return new Identifier("humans", "textures/entity/human/thinsteve.png");
     }
     
 }

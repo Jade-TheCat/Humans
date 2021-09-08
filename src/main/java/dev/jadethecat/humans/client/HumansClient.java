@@ -9,14 +9,9 @@ import net.minecraft.util.Identifier;
 
 public class HumansClient implements ClientModInitializer {
 
-    public static final EntityModelLayer MODEL_HUMAN_LAYER = new EntityModelLayer(new Identifier("humans", "human"), "main");
 
     @Override
     public void onInitializeClient() {
-        EntityRendererRegistry.register(Humans.HUMAN, (context) -> {
-            return new HumanEntityRenderer(context, false);
-        });
-        EntityModelLayerRegistry.registerModelLayer(MODEL_HUMAN_LAYER, HumanEntityModel::getTexturedModelData);
     }
     
 }

@@ -9,5 +9,9 @@ public class HumanEntity extends PathAwareEntity {
     public HumanEntity(EntityType<? extends PathAwareEntity> entityType, World world) {
         super(entityType, world);
     }
+
+    public String getModel() {
+        return "slim";
+    }
     
 }
