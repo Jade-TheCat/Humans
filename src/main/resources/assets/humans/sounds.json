@@ -1,7 +1,6 @@
 {
   "entity.human.hurt": {
-    "category": "entity",
-    "subtitle": "entity.human.hurt",
+    "subtitle": "subtitles.entity.human.hurt",
     "sounds": [
       {
         "name": "humans:entity/human/hurt2", "stream": true

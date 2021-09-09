@@ -4,6 +4,9 @@
   "package": "dev.jadethecat.humans.mixin",
   "compatibilityLevel": "JAVA_16",
   "mixins": [
+    "SkullBlockEntityAccessor",
+    "ZombieEntityMixin",
+    "MobEntityAccessor"
   ],
   "client": [
     "EntityRenderDispatcherMixin"
