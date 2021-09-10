@@ -12,7 +12,6 @@ import net.minecraft.entity.mob.ZombieEntity;
 
 @Mixin(ZombieEntity.class)
 public abstract class ZombieEntityMixin {
-
     @Inject(method="initCustomGoals()V", at = @At("TAIL"), locals = LocalCapture.CAPTURE_FAILSOFT)
     private void initCustomGoals(CallbackInfo info) {
         ((MobEntityAccessor)(Object)this).getTargetSelector().add(3, new FollowTargetGoal<>((ZombieEntity)(Object)this, HumanEntity.class, true));

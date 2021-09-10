@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableMap.Builder;
 import java.util.Map;
 
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -17,17 +16,17 @@ import dev.jadethecat.humans.client.HumanEntityRenderer;
 import net.minecraft.client.render.entity.EntityRenderDispatcher;
 import net.minecraft.client.render.entity.EntityRenderer;
 import net.minecraft.client.render.entity.EntityRendererFactory;
-import net.minecraft.client.render.item.ItemRenderer;
 import net.minecraft.entity.Entity;
 import net.minecraft.resource.ResourceManager;
 
 @Mixin(EntityRenderDispatcher.class)
 public class EntityRenderDispatcherMixin {
-    private static final Map<String, EntityRendererFactory<HumanEntity>> HUMAN_RENDERER_FACTORIES = ImmutableMap.of("default", (context) -> {
-		return new HumanEntityRenderer(context, false);
-	}, "slim", (context) -> {
-		return new HumanEntityRenderer(context, true);
-	});
+    private static final Map<String, EntityRendererFactory<HumanEntity>> HUMAN_RENDERER_FACTORIES = 
+        ImmutableMap.of("default", (context) -> {
+            return new HumanEntityRenderer(context, false);
+        }, "slim", (context) -> {
+            return new HumanEntityRenderer(context, true);
+        });
 
     private static Map<String, EntityRenderer<? extends HumanEntity>> reloadHumanRenderers(EntityRendererFactory.Context ctx) {
         Builder<String, EntityRenderer<? extends HumanEntity>> builder = ImmutableMap.builder();
@@ -45,11 +44,11 @@ public class EntityRenderDispatcherMixin {
 
 
     @Inject(at = @At("TAIL"), method = "getRenderer(Lnet/minecraft/entity/Entity;)Lnet/minecraft/client/render/entity/EntityRenderer;", cancellable = true)
-    private void getRenderer(Entity entity, CallbackInfoReturnable<EntityRenderer> info) {
+    private void getRenderer(Entity entity, CallbackInfoReturnable<EntityRenderer<?>> info) {
         if (entity instanceof HumanEntity) {
             String string = ((HumanEntity)entity).getModel();
-			EntityRenderer<? extends HumanEntity> entityRenderer = (EntityRenderer)this.humanRenderers.get(string);
-			info.setReturnValue(entityRenderer != null ? entityRenderer : (EntityRenderer)this.humanRenderers.get("default"));
+			EntityRenderer<? extends HumanEntity> entityRenderer = (EntityRenderer<? extends HumanEntity>)this.humanRenderers.get(string);
+			info.setReturnValue(entityRenderer != null ? entityRenderer : (EntityRenderer<? extends HumanEntity>)this.humanRenderers.get("default"));
         }
     }
 
