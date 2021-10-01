@@ -9,15 +9,13 @@ import com.mojang.datafixers.util.Pair;
 import org.jetbrains.annotations.Nullable;
 
 import dev.jadethecat.humans.Humans;
-import dev.jadethecat.humans.entity.ai.FollowHighAffinityGoal;
+import dev.jadethecat.humans.entity.ai.FollowBestFriendGoal;
 import dev.jadethecat.humans.mixin.SkullBlockEntityAccessor;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.resource.language.TranslationStorage;
 import net.minecraft.client.util.DefaultSkinHelper;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.Tameable;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
@@ -33,13 +31,12 @@ import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.mob.PathAwareEntity;
-import net.minecraft.entity.passive.PassiveEntity;
-import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ArmorItem;
 import net.minecraft.item.ArmorMaterials;
@@ -50,12 +47,13 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TimeHelper;
 import net.minecraft.util.math.MathHelper;
@@ -68,6 +66,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
     private static final TrackedData<Boolean> LEGACY_SOUND;
 	private static final UniformIntProvider ANGER_TIME_RANGE;
     private static final TrackedData<NbtCompound> AFFINITY;
+    private static final TrackedData<Optional<UUID>> BEST_FRIEND;
     public static final int MAX_AFFINITY = 1000;
     public static final int HIGH_AFFINITY = MathHelper.floor(MAX_AFFINITY*0.75);
     private int angerTime;
@@ -93,7 +92,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
     protected void initGoals() {
         this.goalSelector.add(0, new SwimGoal(this));
 		this.goalSelector.add(1, new MeleeAttackGoal(this, 0.35D, false));
-        this.goalSelector.add(1, new FollowHighAffinityGoal(this, 10, 0.5D));
+        this.goalSelector.add(1, new FollowBestFriendGoal(this, 10, 0.5D));
 		this.goalSelector.add(2, new WanderAroundFarGoal(this, 0.35D, 0.0F));
 		this.goalSelector.add(3, new LookAtEntityGoal(this, PlayerEntity.class, 8.0F));
 		this.goalSelector.add(3, new LookAroundGoal(this));
@@ -165,6 +164,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         this.dataTracker.startTracking(SKIN_PROFILE, new NbtCompound());
         this.dataTracker.startTracking(LEGACY_SOUND, false);
         this.dataTracker.startTracking(AFFINITY, new NbtCompound());
+        this.dataTracker.startTracking(BEST_FRIEND, Optional.empty());
     }
 
     @Nullable
@@ -186,6 +186,18 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         }
     }
 
+    public Optional<UUID> getBestFriend() {
+        return this.dataTracker.get(BEST_FRIEND);
+    }
+
+    public void setBestFriend(@Nullable UUID bestFriendUuid) {
+        if (bestFriendUuid == null) {
+            this.dataTracker.set(BEST_FRIEND, Optional.empty());
+        } else {
+            this.dataTracker.set(BEST_FRIEND, Optional.of(bestFriendUuid));
+        }
+    }
+
     public int getAffinity(UUID uuid) {
         NbtCompound compound = this.dataTracker.get(AFFINITY);
         if (compound.contains(uuid.toString())) {
@@ -203,7 +215,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 
     public void setAffinity(UUID uuid, int affinity) {
         NbtCompound compound = this.dataTracker.get(AFFINITY);
-        if (affinity < MAX_AFFINITY) affinity = MAX_AFFINITY;
+        if (affinity > MAX_AFFINITY) affinity = MAX_AFFINITY;
         if (compound.contains(uuid.toString())) {
             NbtCompound affinitySetup = compound.getCompound(uuid.toString());
             if (affinitySetup != null) {
@@ -312,6 +324,9 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 		nbt.put("SkinProfile", compound);
 		nbt.putBoolean("UseLegacySound", (boolean)this.dataTracker.get(LEGACY_SOUND));
         nbt.put("Affinity", this.dataTracker.get(AFFINITY));
+        if (this.dataTracker.get(BEST_FRIEND).isPresent()) {
+            nbt.putUuid("BestFriend", this.dataTracker.get(BEST_FRIEND).get());
+        }
 	}
 
     @Override
@@ -323,6 +338,8 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 			this.dataTracker.set(LEGACY_SOUND, nbt.getBoolean("UseLegacySound"));
         if (nbt.contains("Affinity"))
             this.dataTracker.set(AFFINITY, nbt.getCompound("Affinity"));
+        if (nbt.contains("BestFriend"))
+            this.dataTracker.set(BEST_FRIEND, Optional.of(nbt.getUuid("BestFriend")));
 	}
 
     @Override
@@ -344,6 +361,18 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         super.tick();
         updateCapeAngles();
         tickAffinity();
+        if (this.getBestFriend().isPresent()) {
+            PlayerEntity bestFriend = this.world.getPlayerByUuid(this.getBestFriend().get());
+            if (bestFriend != null && this.getRandom().nextInt(1000) < 2) {
+                if (bestFriend.getHealth() < 4.0f) {
+                    bestFriend.addStatusEffect(new StatusEffectInstance(StatusEffects.INSTANT_HEALTH, 1), this);
+                    String name = this.hasCustomName() ? this.getCustomName().asString() : new TranslatableText("entity.humans.human").asString();
+                    bestFriend.sendMessage(new TranslatableText("entity.human.gave_health", name), false);
+                } else if (bestFriend.getHungerManager().getFoodLevel() < 4) {
+                    bestFriend.addStatusEffect(new StatusEffectInstance(StatusEffects.SATURATION, 10, 1), this);
+                }
+            }
+        }
     }
 
     private void tickAffinity() {
@@ -352,10 +381,12 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
             for (String k : compound.getKeys()) {
                 NbtCompound affinitySetup = compound.getCompound(k);
                 if (affinitySetup != null && affinitySetup.contains("Cooldown")) {
-                    int cooldown = affinitySetup.getInt("Cooldown") - 1;
+                    int cooldown = affinitySetup.getInt("Cooldown") - 5;
                     if (cooldown <= 0) {
                         affinitySetup.putInt("Cooldown", 48000);
-                        affinitySetup.putInt("Value", affinitySetup.getInt("Value"));
+                        if (!this.getBestFriend().isPresent() || UUID.fromString(k) != this.getBestFriend().get()) {
+                            affinitySetup.putInt("Value", affinitySetup.getInt("Value"));
+                        }
                         compound.put(k, affinitySetup);
                     } else {
                         affinitySetup.putInt("Cooldown", cooldown);
@@ -502,16 +533,62 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         LEGACY_SOUND = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
         AFFINITY = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.TAG_COMPOUND);
 		ANGER_TIME_RANGE = TimeHelper.betweenSeconds(20, 39);
+        BEST_FRIEND = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
     }
 
     @Override
     public ActionResult interactMob(PlayerEntity player, Hand hand) {
         ItemStack stack = player.getStackInHand(hand);
         Item item = stack.getItem();
+        String name = this.hasCustomName() ? this.getCustomName().asString() : TranslationStorage.getInstance().get("entity.human.this_human");
         if (this.world.isClient) {
             return ActionResult.SUCCESS;
         } else {
-            return ActionResult.SUCCESS;
+            if (item == Items.STICK && this.getAffinity(player.getUuid()) >= HIGH_AFFINITY) {
+                if (this.getBestFriend().isPresent() && this.getBestFriend().get() != player.getUuid()) {
+                    player.sendMessage(new TranslatableText("entity.human.best_friend_exists", name).formatted(Formatting.RED), true);
+                    return ActionResult.FAIL;
+                } else if (this.getBestFriend().isPresent()) {
+                    if (player.isSneaking()) {
+                        this.setBestFriend(null);
+                        player.sendMessage(
+                            new TranslatableText("entity.human.best_friend_removed", name)
+                            .formatted(Formatting.RED), true);
+                        return ActionResult.SUCCESS;
+                    }
+                    player.sendMessage(
+                        new TranslatableText("entity.human.best_friend_already", name)
+                        .formatted(Formatting.GOLD), true);
+                    return ActionResult.SUCCESS;
+                } else {
+                    this.setBestFriend(player.getUuid());
+                    player.sendMessage(
+                        new TranslatableText("entity.human.best_friend_set", name)
+                        .formatted(Formatting.GREEN), true);
+                    return ActionResult.SUCCESS;
+                }
+            } else if (item == Items.STICK) {
+                player.sendMessage(
+                    new TranslatableText("entity.human.low_affinity", 
+                        name,
+                        this.getAffinity(player.getUuid()),
+                        HIGH_AFFINITY)
+                    .formatted(Formatting.RED), false);
+                return ActionResult.FAIL;
+            } else if (item == Items.POPPY) {
+                player.sendMessage(
+                    new TranslatableText("entity.human.affinity",
+                        name,
+                        this.getAffinity(player.getUuid()),
+                        HIGH_AFFINITY), false);
+            }else if (Humans.HUMAN_LIKED_ITEMS.contains(item)) {
+                tryEquip(stack);
+                this.addAffinity(player.getUuid(), rankLikedItem(item));
+                stack.setCount(stack.getCount() - 1);
+                player.setStackInHand(hand, stack);
+                return ActionResult.SUCCESS;
+            }
+            return ActionResult.FAIL;
         }
     }
 }

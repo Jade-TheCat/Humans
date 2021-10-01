@@ -9,7 +9,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.scoreboard.AbstractTeam;
 import net.minecraft.util.math.Box;
 
-public class FollowHighAffinityGoal extends Goal {
+public class FollowBestFriendGoal extends Goal {
     protected final int reciprocalChance;
 	private final EntityNavigation navigation;
 	private int updateCountdownTicks;
@@ -20,7 +20,7 @@ public class FollowHighAffinityGoal extends Goal {
     private int timeWithoutVisibility;
     private int maxTimeWithoutVisibility = 60;
 
-    public FollowHighAffinityGoal(HumanEntity human, int reciprocalChance, double speed) {
+    public FollowBestFriendGoal(HumanEntity human, int reciprocalChance, double speed) {
         this.reciprocalChance = reciprocalChance;
         this.navigation = human.getNavigation();
         this.speed = speed;
@@ -30,7 +30,7 @@ public class FollowHighAffinityGoal extends Goal {
 
     @Override
     public boolean canStart() {
-        if (!this.human.hasHighAffinity()) {
+        if (!this.human.getBestFriend().isPresent()) {
 			return false;
 		} else {
 			this.findClosestTarget();
@@ -97,7 +97,7 @@ public class FollowHighAffinityGoal extends Goal {
     
     protected void findClosestTarget() {
         this.target = this.human.world.getClosestEntity(this.human.world.getEntitiesByClass(PlayerEntity.class, this.getSearchBox(this.getFollowRange()), (livingEntity) -> {
-            return livingEntity instanceof PlayerEntity && ((HumanEntity)this.human).getAffinity(livingEntity.getUuid()) > HumanEntity.HIGH_AFFINITY;
+            return livingEntity instanceof PlayerEntity && ((HumanEntity)this.human).getBestFriend().get() == livingEntity.getUuid();
         }), targetPredicate, this.human, this.human.getX(), this.human.getEyeY(), this.human.getZ());
     }
 }

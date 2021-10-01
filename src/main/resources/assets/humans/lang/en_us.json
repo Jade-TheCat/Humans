@@ -1,4 +1,12 @@
 {
     "item.humans.human_spawn_egg": "Human Spawn Egg",
-    "entity.humans.human": "Human"
+    "entity.humans.human": "Human",
+    "entity.human.gave_health": "%1$s healed you!",
+    "entity.human.best_friend_set": "You are now %1$s's best friend!",
+    "entity.human.best_friend_exists": "%1$s already has a best friend.",
+    "entity.human.best_friend_removed": "You are no longer %1$s's best friend. :(",
+    "entity.human.best_friend_already": "You are already %1$s's best friend.",
+    "entity.human.low_affinity": "You do not have high enough affinity with %1$s to be their friend. Your affinity is: %2$s/%3$s.",
+    "entity.human.affinity": "Your current affinity with %1$s is %2$s/%3$s.",
+    "entity.human.this_human": "this Human"
 }
