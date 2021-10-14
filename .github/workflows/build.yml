@@ -22,10 +22,6 @@ jobs:
         java-version: '16'
         distribution: 'adopt'
         cache: gradle
-    - name: Cache Gradle packages
-      uses: actions/cache@v2
-      with:
-        path: ~/.gradle/caches
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Build with Gradle
