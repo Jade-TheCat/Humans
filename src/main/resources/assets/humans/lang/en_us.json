@@ -1,5 +1,7 @@
 {
     "item.humans.human_spawn_egg": "Human Spawn Egg",
+    "item.humans.flute": "Flute",
+    "item.humans.heart_locket": "Heart-Shaped Locket",
     "entity.humans.human": "Human",
     "entity.human.gave_health": "%1$s healed you!",
     "entity.human.best_friend_set": "You are now %1$s's best friend!",
@@ -8,5 +10,17 @@
     "entity.human.best_friend_already": "You are already %1$s's best friend.",
     "entity.human.low_affinity": "You do not have high enough affinity with %1$s to be their friend. Your affinity is: %2$s/%3$s.",
     "entity.human.affinity": "Your current affinity with %1$s is %2$s/%3$s.",
-    "entity.human.this_human": "this Human"
+    "entity.human.this_human": "this Human",
+    "text.autoconfig.humans.title": "Humans Config",
+    "text.autoconfig.humans.option.exclusivelySpawnNamed": "Spawn humans exclusively with a name from Spawnable Names",
+    "text.autoconfig.humans.option.chanceToSpawnNamed": "Chance to spawn with a Spawnable Name",
+    "text.autoconfig.humans.option.chanceToSpawnSlim": "Chance for a human to spawn as Alex",
+    "text.autoconfig.humans.option.chanceToSpawnWithLegacySounds": "Chance for a human to spawn using legacy OOF sound",
+    "text.autoconfig.humans.option.chanceToSpawnWithLegacyAnimation": "Chance for a human to spawn using legacy walk animation",
+    "text.autoconfig.humans.option.chanceToSpawnMojangsta": "Chance for a human to spawn as a Mojangsta",
+    "text.autoconfig.humans.option.spawnableNames": "Names a Human can spawn as",
+    "text.autoconfig.humans.option.PlayerSkin": "Player Skin",
+    "text.autoconfig.humans.option.PlayerSkin.name": "Player Name",
+    "text.autoconfig.humans.option.PlayerSkin.slimSkin": "Slim Skin",
+    "text.autoconfig.humans.option.spawnableMojangstas": "Mojangstas a Human can spawn as"
 }

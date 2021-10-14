@@ -46,7 +46,8 @@ public class EntityRenderDispatcherMixin {
     @Inject(at = @At("TAIL"), method = "getRenderer(Lnet/minecraft/entity/Entity;)Lnet/minecraft/client/render/entity/EntityRenderer;", cancellable = true)
     private void getRenderer(Entity entity, CallbackInfoReturnable<EntityRenderer<?>> info) {
         if (entity instanceof HumanEntity) {
-            String string = ((HumanEntity)entity).getModel();
+            boolean useSlim = ((HumanEntity)entity).usesSlimSkin();
+            String string = useSlim ? "slim" : "default";
 			EntityRenderer<? extends HumanEntity> entityRenderer = (EntityRenderer<? extends HumanEntity>)this.humanRenderers.get(string);
 			info.setReturnValue(entityRenderer != null ? entityRenderer : (EntityRenderer<? extends HumanEntity>)this.humanRenderers.get("default"));
         }

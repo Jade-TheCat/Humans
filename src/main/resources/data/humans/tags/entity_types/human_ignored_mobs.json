@@ -1,0 +1,9 @@
+{
+    "replace": false,
+    "values": [
+        "minecraft:enderman",
+        "minecraft:guardian",
+        "minecraft:creeper",
+        "minecraft:elder_guardian"
+    ]
+}

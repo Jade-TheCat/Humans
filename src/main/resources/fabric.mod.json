@@ -4,12 +4,13 @@
   "version": "${version}",
 
   "name": "Humans",
-  "description": "A mod that brings back a cut mob with new functionality",
+  "description": "Adds a mob inspired by the Classic Human!",
   "authors": [
     "JadeTheCat"
   ],
   "contact": {
     "homepage": "https://jadethecat.dev/",
+    "issues": "https://github.com/Jade-TheCat/Humans/issues",
     "sources": "https://github.com/Jade-TheCat/Humans"
   },
 
@@ -23,6 +24,9 @@
     ],
     "client": [
       "dev.jadethecat.humans.client.HumansClient"
+    ],
+    "modmenu": [
+      "dev.jadethecat.humans.integration.ModMenuIntegration"
     ]
   },
   "mixins": [
@@ -33,9 +37,10 @@
     "fabricloader": ">=0.11.3",
     "fabric": "*",
     "minecraft": "1.17.x",
-    "java": ">=16"
+    "java": ">=16",
+    "cloth-config2": "^5.0.38"
   },
   "suggests": {
-    "another-mod": "*"
+    "modmenu": "^2.0.14"
   }
 }

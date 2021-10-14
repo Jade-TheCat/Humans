@@ -9,7 +9,8 @@
     "MobEntityAccessor"
   ],
   "client": [
-    "EntityRenderDispatcherMixin"
+    "EntityRenderDispatcherMixin",
+    "BipedEntityModelMixin"
   ],
   "injectors": {
     "defaultRequire": 1

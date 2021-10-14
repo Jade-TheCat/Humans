@@ -1,7 +1,10 @@
 package dev.jadethecat.humans;
 
 import dev.jadethecat.humans.entity.HumanEntity;
+import me.shedaniel.autoconfig.AutoConfig;
+import me.shedaniel.autoconfig.serializer.Toml4jConfigSerializer;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.fabricmc.fabric.api.tag.TagFactory;
@@ -29,12 +32,19 @@ public class Humans implements ModInitializer {
 
 	public static final Tag<Item> HUMAN_LIKED_ITEMS = TagFactory.ITEM.create(new Identifier("humans", "human_liked_items"));
 	public static final Tag<Item> HUMAN_FOOD = TagFactory.ITEM.create(new Identifier("humans", "human_food"));
+	public static final Tag<EntityType<?>> HUMAN_IGNORED_MOBS = TagFactory.ENTITY_TYPE.create(new Identifier("humans", "human_ignored_mobs"));
+
+	public static final Item FLUTE = new Item(new FabricItemSettings().group(ItemGroup.TOOLS));
+	public static final Item HEART_LOCKET = new Item(new FabricItemSettings().group(ItemGroup.MISC));
 
 	@Override
 	public void onInitialize() {
 		FabricDefaultAttributeRegistry.register(HUMAN, HumanEntity.createMobAttributes());
 		Registry.register(Registry.ITEM, new Identifier("humans", "human_spawn_egg"), HUMAN_SPAWN_EGG);
+		Registry.register(Registry.ITEM, new Identifier("humans", "flute"), FLUTE);
+		Registry.register(Registry.ITEM, new Identifier("humans", "heart_locket"), HEART_LOCKET);
 		Registry.register(Registry.SOUND_EVENT, LEGACY_HURT_SOUND_ID, LEGACY_HURT_SOUND_EVENT);
-		FabricDefaultAttributeRegistry.register(HUMAN, HumanEntity.createHumanAttributes());;
+		FabricDefaultAttributeRegistry.register(HUMAN, HumanEntity.createHumanAttributes());
+		AutoConfig.register(HumansConfig.class, Toml4jConfigSerializer::new);
 	}
 }

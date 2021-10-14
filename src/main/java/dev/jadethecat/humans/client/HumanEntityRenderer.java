@@ -50,6 +50,8 @@ public class HumanEntityRenderer extends MobEntityRenderer<HumanEntity, PlayerEn
                 : DefaultSkinHelper.getTexture(PlayerEntity.getUuidFromProfile(entity.getSkinProfile()));
             return id;
         }
+        if (entity.usesSlimSkin()) return new Identifier("minecraft", "textures/entity/alex.png");
+        if (entity.usesLegacyAnim() || entity.usesLegacySound()) return new Identifier("humans", "textures/entity/human/legasteve.png");
         return new Identifier("minecraft", "textures/entity/steve.png");
     }
     

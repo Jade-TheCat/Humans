@@ -9,13 +9,16 @@ import com.mojang.datafixers.util.Pair;
 import org.jetbrains.annotations.Nullable;
 
 import dev.jadethecat.humans.Humans;
+import dev.jadethecat.humans.HumansConfig;
 import dev.jadethecat.humans.entity.ai.FollowBestFriendGoal;
 import dev.jadethecat.humans.mixin.SkullBlockEntityAccessor;
+import me.shedaniel.autoconfig.AutoConfig;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.resource.language.TranslationStorage;
-import net.minecraft.client.util.DefaultSkinHelper;
+import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.goal.FollowTargetGoal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
@@ -33,7 +36,6 @@ import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.Angerable;
-import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.mob.PathAwareEntity;
@@ -58,6 +60,8 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.TimeHelper;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.intprovider.UniformIntProvider;
+import net.minecraft.world.LocalDifficulty;
+import net.minecraft.world.ServerWorldAccess;
 import net.minecraft.world.World;
 import net.minecraft.world.event.GameEvent;
 
@@ -67,6 +71,8 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 	private static final UniformIntProvider ANGER_TIME_RANGE;
     private static final TrackedData<NbtCompound> AFFINITY;
     private static final TrackedData<Optional<UUID>> BEST_FRIEND;
+    private static final TrackedData<Boolean> SLIM_SKIN;
+    private static final TrackedData<Boolean> LEGACY_ANIMATION;
     public static final int MAX_AFFINITY = 1000;
     public static final int HIGH_AFFINITY = MathHelper.floor(MAX_AFFINITY*0.75);
     private int angerTime;
@@ -88,6 +94,25 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 		this.getNavigation().setCanSwim(true);
 		this.setCanPickUpLoot(true);
     }
+
+    @Override
+    public EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt) {
+        HumansConfig config = AutoConfig.getConfigHolder(HumansConfig.class).getConfig();
+        if (config.exclusivelySpawnNamed || this.getRandom().nextFloat() < config.chanceToSpawnNamed) {
+            int i = this.getRandom().nextInt(config.spawnableNames.size());
+            this.setCustomName(new LiteralText(config.spawnableNames.get(i).name));
+            this.dataTracker.set(SLIM_SKIN, config.spawnableNames.get(i).slimSkin);
+        } else if (this.getRandom().nextFloat() < config.chanceToSpawnMojangsta) {
+            int i = this.getRandom().nextInt(config.spawnableMojangstas.size());
+            this.setCustomName(new LiteralText(config.spawnableMojangstas.get(i).name).formatted(Formatting.GOLD));
+            this.dataTracker.set(SLIM_SKIN, config.spawnableMojangstas.get(i).slimSkin);
+        } else {
+            if (this.getRandom().nextFloat() < config.chanceToSpawnSlim) this.dataTracker.set(SLIM_SKIN, true);
+            if (this.getRandom().nextFloat() < config.chanceToSpawnWithLegacyAnimation) this.dataTracker.set(LEGACY_ANIMATION, true);
+            if (this.getRandom().nextFloat() < config.chanceToSpawnWithLegacySounds) this.dataTracker.set(LEGACY_SOUND, true);
+        }
+        return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
+    }
     
     protected void initGoals() {
         this.goalSelector.add(0, new SwimGoal(this));
@@ -100,7 +125,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         this.targetSelector.add(1, new RevengeGoal(this, new Class[0]));
         this.targetSelector.add(2, new FollowTargetGoal<PlayerEntity>(this, PlayerEntity.class, 10, true, false, this::shouldAngerAt));
 		this.targetSelector.add(2, new FollowTargetGoal<MobEntity>(this, MobEntity.class, 5, false, false, (entity) -> {
-			return entity instanceof Monster && !(entity instanceof EndermanEntity);
+			return entity instanceof Monster && !Humans.HUMAN_IGNORED_MOBS.contains(entity.getType()) && !entity.isSwimming();
 		}));
     }
 
@@ -139,14 +164,6 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         return 0;
     }
 
-    public String getModel() {
-        if (this.hasCustomName()) {
-            UUID uuid = PlayerEntity.getOfflinePlayerUuid(this.getCustomName().asString());
-            return DefaultSkinHelper.getModel(uuid);
-        }
-        return "default";
-    }
-
     @Override
     @Nullable
 	protected SoundEvent getHurtSound(DamageSource source) {
@@ -165,6 +182,8 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         this.dataTracker.startTracking(LEGACY_SOUND, false);
         this.dataTracker.startTracking(AFFINITY, new NbtCompound());
         this.dataTracker.startTracking(BEST_FRIEND, Optional.empty());
+        this.dataTracker.startTracking(SLIM_SKIN, false);
+        this.dataTracker.startTracking(LEGACY_ANIMATION, false);
     }
 
     @Nullable
@@ -216,7 +235,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
     public void setAffinity(UUID uuid, int affinity) {
         NbtCompound compound = this.dataTracker.get(AFFINITY);
         if (affinity > MAX_AFFINITY) affinity = MAX_AFFINITY;
-        if (compound.contains(uuid.toString())) {
+        if (uuid != null && compound.contains(uuid.toString())) {
             NbtCompound affinitySetup = compound.getCompound(uuid.toString());
             if (affinitySetup != null) {
                 affinitySetup.putInt("Value", affinity);
@@ -227,7 +246,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
                 this.dataTracker.set(AFFINITY, compound);
                 setAffinity(uuid, affinity);
             }
-        } else {
+        } else if (uuid != null) {
             NbtCompound affinitySetup = new NbtCompound();
             affinitySetup.putInt("Value", affinity);
             affinitySetup.putInt("Cooldown", 48000);
@@ -288,16 +307,42 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         return false;
     }
 
+    public boolean usesSlimSkin() {
+        return this.dataTracker.get(SLIM_SKIN);
+    }
+
+    public boolean usesLegacyAnim() {
+        return this.dataTracker.get(LEGACY_ANIMATION);
+    }
+
+    public boolean usesLegacySound() {
+        return this.dataTracker.get(LEGACY_SOUND);
+    }
+
     @Override
     public void setCustomName(@Nullable Text name) {
-        if (name.asString().contains("&L")) {
-            this.dataTracker.set(LEGACY_SOUND, true);
-            name = new LiteralText(name.asString().replace("&L", ""));
-        } else {
-            this.dataTracker.set(LEGACY_SOUND, false);
+        String nameString = name.asString();
+        if (nameString.contains("&L")) {
+            this.dataTracker.set(LEGACY_SOUND, !this.dataTracker.get(LEGACY_SOUND));
+            nameString = nameString.replace("&L", "");
         }
-        boolean keepSkin = name.asString().contains("&K");
-        if (keepSkin) name = new LiteralText(name.asString().replace("&K", ""));
+
+        if (nameString.contains("&S")) {
+            this.dataTracker.set(SLIM_SKIN, !this.dataTracker.get(SLIM_SKIN));
+            nameString = nameString.replace("&S", "");
+        }
+
+        if (nameString.contains("&A")) {
+            this.dataTracker.set(LEGACY_ANIMATION, !this.dataTracker.get(LEGACY_ANIMATION));
+            nameString = nameString.replace("&A", "");
+        }
+
+        if (nameString.isBlank()) return;
+
+        boolean keepSkin = nameString.contains("&K");
+        if (keepSkin) nameString = nameString.replace("&K", "");
+
+        name = new LiteralText(nameString);
         super.setCustomName(name);
         GameProfile gprofile = getSkinProfile();
         if (name != null && !keepSkin && (gprofile == null || gprofile.getName() != name.asString())) {
@@ -324,9 +369,11 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 		nbt.put("SkinProfile", compound);
 		nbt.putBoolean("UseLegacySound", (boolean)this.dataTracker.get(LEGACY_SOUND));
         nbt.put("Affinity", this.dataTracker.get(AFFINITY));
+        nbt.putBoolean("UseSlimSkin", this.dataTracker.get(SLIM_SKIN));
         if (this.dataTracker.get(BEST_FRIEND).isPresent()) {
             nbt.putUuid("BestFriend", this.dataTracker.get(BEST_FRIEND).get());
         }
+        nbt.putBoolean("UseLegacyAnimation", this.dataTracker.get(LEGACY_ANIMATION));
 	}
 
     @Override
@@ -340,6 +387,10 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
             this.dataTracker.set(AFFINITY, nbt.getCompound("Affinity"));
         if (nbt.contains("BestFriend"))
             this.dataTracker.set(BEST_FRIEND, Optional.of(nbt.getUuid("BestFriend")));
+        if (nbt.contains("UseSlimSkin"))
+            this.dataTracker.set(SLIM_SKIN, nbt.getBoolean("UseSlimSkin"));
+        if (nbt.contains("UseLegacyAnimation"))
+            this.dataTracker.set(LEGACY_ANIMATION, nbt.getBoolean("UseLegacyAnimation"));
 	}
 
     @Override
@@ -433,7 +484,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         if (!this.isInvulnerableTo(source) 
                 && !source.isSourceCreativePlayer() 
                 && source.getAttacker() instanceof PlayerEntity) {
-            this.setAffinity(uuid, -1);
+            this.setAffinity(source.getAttacker().getUuid(), -1);
         }
         super.applyDamage(source, amount);
     }
@@ -518,8 +569,8 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         this.setAffinity(this.previouslyAngryAt, 0);
         this.angeryAt = uuid;
         PlayerEntity player = this.world.getPlayerByUuid(uuid);
-        if (player != null && !player.isCreative()) {
-            this.setAffinity(uuid, -1);
+        if (this.angeryAt != this.previouslyAngryAt && player != null && !player.isCreative() && this.getAffinity(this.angeryAt) != -1) {
+            this.setAffinity(this.angeryAt, -1);
         }
     }
 
@@ -534,6 +585,8 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         AFFINITY = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.TAG_COMPOUND);
 		ANGER_TIME_RANGE = TimeHelper.betweenSeconds(20, 39);
         BEST_FRIEND = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
+        SLIM_SKIN = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+        LEGACY_ANIMATION = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
     }
 
     @Override
@@ -542,9 +595,22 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         Item item = stack.getItem();
         String name = this.hasCustomName() ? this.getCustomName().asString() : TranslationStorage.getInstance().get("entity.human.this_human");
         if (this.world.isClient) {
+            if (item == Humans.HEART_LOCKET && this.getAffinity(player.getUuid()) >= HIGH_AFFINITY) {
+                if (this.getBestFriend().isPresent() && this.getBestFriend().get() != player.getUuid()) {
+                    return ActionResult.FAIL;
+                } else {
+                        return ActionResult.SUCCESS;
+                }
+            } else if (item == Humans.HEART_LOCKET) {
+                return ActionResult.FAIL;
+            } else if (item == Items.POPPY) {
+                return ActionResult.SUCCESS;
+            } else if (Humans.HUMAN_LIKED_ITEMS.contains(item)) {
+                return ActionResult.CONSUME;
+            }
             return ActionResult.SUCCESS;
         } else {
-            if (item == Items.STICK && this.getAffinity(player.getUuid()) >= HIGH_AFFINITY) {
+            if (item == Humans.HEART_LOCKET && this.getAffinity(player.getUuid()) >= HIGH_AFFINITY) {
                 if (this.getBestFriend().isPresent() && this.getBestFriend().get() != player.getUuid()) {
                     player.sendMessage(new TranslatableText("entity.human.best_friend_exists", name).formatted(Formatting.RED), true);
                     return ActionResult.FAIL;
@@ -567,7 +633,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
                         .formatted(Formatting.GREEN), true);
                     return ActionResult.SUCCESS;
                 }
-            } else if (item == Items.STICK) {
+            } else if (item == Humans.HEART_LOCKET) {
                 player.sendMessage(
                     new TranslatableText("entity.human.low_affinity", 
                         name,
@@ -581,12 +647,13 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
                         name,
                         this.getAffinity(player.getUuid()),
                         HIGH_AFFINITY), false);
-            }else if (Humans.HUMAN_LIKED_ITEMS.contains(item)) {
+                return ActionResult.SUCCESS;
+            } else if (Humans.HUMAN_LIKED_ITEMS.contains(item)) {
                 tryEquip(stack);
                 this.addAffinity(player.getUuid(), rankLikedItem(item));
                 stack.setCount(stack.getCount() - 1);
                 player.setStackInHand(hand, stack);
-                return ActionResult.SUCCESS;
+                return ActionResult.CONSUME;
             }
             return ActionResult.FAIL;
         }
