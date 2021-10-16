@@ -6,7 +6,8 @@
   "mixins": [
     "SkullBlockEntityAccessor",
     "ZombieEntityMixin",
-    "MobEntityAccessor"
+    "MobEntityAccessor",
+    "WorldInvoker"
   ],
   "client": [
     "EntityRenderDispatcherMixin",

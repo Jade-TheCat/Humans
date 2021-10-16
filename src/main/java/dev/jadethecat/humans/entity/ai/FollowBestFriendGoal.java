@@ -36,7 +36,7 @@ public class FollowBestFriendGoal extends Goal {
 
     @Override
     public boolean canStart() {
-        if (!this.human.getBestFriend().isPresent()) {
+        if (!this.human.getBestFriend().isPresent() || this.human.getState() != HumanEntity.FOLLOWING_STATE) {
 			return false;
 		} else {
 			this.findClosestTarget();
@@ -72,7 +72,10 @@ public class FollowBestFriendGoal extends Goal {
 
     @Override
     public boolean shouldContinue() {
-        if (this.target == null || this.target.isCreative() || !this.human.canTarget(this.target)) {
+        if (this.target == null 
+                || this.target.isCreative() 
+                || !this.human.canTarget(this.target) 
+                || this.human.getState() != HumanEntity.FOLLOWING_STATE) {
             return false;
         } else {
             AbstractTeam abstractTeam = this.human.getScoreboardTeam();
@@ -94,7 +97,7 @@ public class FollowBestFriendGoal extends Goal {
             }
         }
     }
-    
+
 	protected Box getSearchBox(double distance) {
 		return this.human.getBoundingBox().expand(distance, 4.0D, distance);
 	}

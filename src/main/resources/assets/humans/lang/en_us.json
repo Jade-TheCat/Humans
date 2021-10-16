@@ -22,5 +22,8 @@
     "text.autoconfig.humans.option.PlayerSkin": "Player Skin",
     "text.autoconfig.humans.option.PlayerSkin.name": "Player Name",
     "text.autoconfig.humans.option.PlayerSkin.slimSkin": "Slim Skin",
-    "text.autoconfig.humans.option.spawnableMojangstas": "Mojangstas a Human can spawn as"
+    "text.autoconfig.humans.option.spawnableMojangstas": "Mojangstas a Human can spawn as",
+    "gui.humans.flute.summon_party": "Summon Party",
+    "gui.humans.flute.party_management": "Party Management",
+    "gui.humans.flute.human_no_name": "Human (No Name)"
 }

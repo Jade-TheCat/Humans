@@ -19,6 +19,10 @@ repositories {
 	maven { url "https://maven.shedaniel.me/" }
 	maven { url "https://maven.terraformersmc.com"}
 	mavenCentral()
+	maven {
+        name = "CottonMC"
+        url = "https://server.bbkr.space/artifactory/libs-release"
+    }
 }
 
 dependencies {
@@ -27,12 +31,23 @@ dependencies {
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-	// Fabric API. This is technically optional, but you probably want it anyway.
+	//Fabric API
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	//Cloth Config + ModMenu
 	modApi("me.shedaniel.cloth:cloth-config-fabric:5.0.38") {        exclude(group: "net.fabricmc.fabric-api")    }
 	modImplementation "com.terraformersmc:modmenu:2.0.14"
 	implementation 'com.moandjiezana.toml:toml4j:0.7.2'
 	include "com.moandjiezana.toml:toml4j:0.7.2"
+
+	//LibGUI
+	modImplementation include("io.github.cottonmc:LibGui:4.2.1+1.17.1")
+
+	//Cardinal Components
+	modApi include("io.github.onyxstudios.Cardinal-Components-API:cardinal-components-base:3.1.1")
+	modImplementation include("io.github.onyxstudios.Cardinal-Components-API:cardinal-components-entity:3.1.1")
+
+	//Trinkets
+	modImplementation "dev.emi:trinkets:3.0.4"
 }
 
 processResources {

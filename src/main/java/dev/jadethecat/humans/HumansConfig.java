@@ -62,6 +62,8 @@ public class HumansConfig implements ConfigData{
      */
     public float chanceToSpawnMojangsta = 0.001f;
 
+    public int humanSentryWanderRange = 50;
+
     public static class PlayerSkin {
         public String name;
         public boolean slimSkin;
