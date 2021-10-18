@@ -39,7 +39,7 @@ public class FlutePartyGui extends LightweightGuiDescription {
         root.setInsets(Insets.ROOT_PANEL);
         WLabel title = new WLabel(new TranslatableText("gui.humans.flute.party_management"))
                             .setHorizontalAlignment(HorizontalAlignment.CENTER);
-        root.add(title, 7, 0, 2, 1);
+        root.add(title, 6, 0, 2, 1);
         WButton summonPartyButton = new WButton(new TranslatableText("gui.humans.flute.summon_party"));
         List<UUID> party = HumansComponents.PARTY.get(player).getList();
         summonPartyButton.setOnClick(() -> {
@@ -68,6 +68,20 @@ public class FlutePartyGui extends LightweightGuiDescription {
             client.setScreen(null);
         });
         root.add(partyStayButton, 5, 10, 4, 1);
+        
+        WButton partyFollowButton = new WButton(new TranslatableText("gui.humans.flute.party_follow"));
+        partyFollowButton.setOnClick(() -> {
+            PacketByteBuf buf = new PacketByteBuf(ByteBufAllocator.DEFAULT.buffer());
+            buf.writeInt(party.size());
+            for (UUID u : party) {
+                buf.writeUuid(u);
+            }
+            ClientPlayNetworking.send(new Identifier("humans", "party_follow"), buf);
+            MinecraftClient client = MinecraftClient.getInstance();
+            client.player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, SoundCategory.PLAYERS, 100.0f, 1.5f);
+            client.setScreen(null);
+        });
+        root.add(partyFollowButton, 10, 10, 4, 1);
 
         BiConsumer<HumanEntity, HumanListItem> configurator = (HumanEntity e, HumanListItem item) -> {
             MinecraftClient client = MinecraftClient.getInstance();
@@ -76,6 +90,7 @@ public class FlutePartyGui extends LightweightGuiDescription {
                 Map<Type,MinecraftProfileTexture> map = client.getSkinProvider().getTextures(e.getSkinProfile());
                 textureId = map.containsKey(Type.SKIN) ? client.getSkinProvider().loadSkin(map.get(Type.SKIN), Type.SKIN) 
                     : DefaultSkinHelper.getTexture(PlayerEntity.getUuidFromProfile(e.getSkinProfile()));
+                item.name.setText(e.getCustomName());
             } else if (e.usesSlimSkin()) {
                 textureId = new Identifier("minecraft", "textures/entity/alex.png");
             } else if (e.usesLegacyAnim() || e.usesLegacySound()) {
@@ -85,6 +100,8 @@ public class FlutePartyGui extends LightweightGuiDescription {
             }
             
             item.sprite.setImage(new Texture(textureId).withUv(0.128f, 0.128f, 0.25f, 0.25f));
+            Identifier stateId = new Identifier(e.getState());
+            item.state.setText(new TranslatableText("entity."+stateId.getNamespace()+".human_state."+stateId.getPath()));
         };
         WListPanel<HumanEntity, HumanListItem> humanList = new WListPanel<>(humans, HumanListItem::new, configurator);
         humanList.setListItemHeight(2*18);

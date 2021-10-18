@@ -33,7 +33,6 @@ public class HumanEntityRenderer extends MobEntityRenderer<HumanEntity, PlayerEn
         this.addFeature(new ArmorFeatureRenderer<>(this, new BipedEntityModel<>(
             context.getPart(slim ? EntityModelLayers.PLAYER_SLIM_INNER_ARMOR : EntityModelLayers.PLAYER_INNER_ARMOR)), 
             new BipedEntityModel<>(context.getPart(slim ? EntityModelLayers.PLAYER_SLIM_OUTER_ARMOR : EntityModelLayers.PLAYER_OUTER_ARMOR))));
-        //this.addFeature(new CapeFeatureRenderer(this));
         this.addFeature(new HeadFeatureRenderer<>(this, context.getModelLoader()));
         this.addFeature(new ElytraFeatureRenderer<>(this, context.getModelLoader()));
         this.addFeature(new HeldItemFeatureRenderer<>(this));

@@ -11,6 +11,10 @@
     "entity.human.low_affinity": "You do not have high enough affinity with %1$s to be their friend. Your affinity is: %2$s/%3$s.",
     "entity.human.affinity": "Your current affinity with %1$s is %2$s/%3$s.",
     "entity.human.this_human": "this Human",
+    "entity.humans.human_state.none": "None",
+    "entity.humans.human_state.following": "Following",
+    "entity.humans.human_state.sentry": "Sentry",
+    "entity.humans.human_state.waiting": "Waiting",
     "text.autoconfig.humans.title": "Humans Config",
     "text.autoconfig.humans.option.exclusivelySpawnNamed": "Spawn humans exclusively with a name from Spawnable Names",
     "text.autoconfig.humans.option.chanceToSpawnNamed": "Chance to spawn with a Spawnable Name",
@@ -24,6 +28,14 @@
     "text.autoconfig.humans.option.PlayerSkin.slimSkin": "Slim Skin",
     "text.autoconfig.humans.option.spawnableMojangstas": "Mojangstas a Human can spawn as",
     "gui.humans.flute.summon_party": "Summon Party",
+    "gui.humans.flute.party_stay": "All Wait",
+    "gui.humans.flute.party_follow": "All Follow",
     "gui.humans.flute.party_management": "Party Management",
-    "gui.humans.flute.human_no_name": "Human (No Name)"
+    "gui.humans.flute.human_no_name": "Human (No Name)",
+    "gui.humans.flute.human_management": "Management: %1$s",
+    "gui.humans.flute.human_state": "State: %1$s",
+    "gui.humans.flute.legacy_sound": "Uses Legacy \"Oof\" Hurt Sound",
+    "gui.humans.flute.legacy_animation": "Uses Legacy \"Flailing Arms\" Walk Animation",
+    "gui.humans.flute.slim_skin": "Uses a Slim Skin",
+    "gui.humans.flute.skin_lock": "Prevent Changes to this Human's Skin"
 }

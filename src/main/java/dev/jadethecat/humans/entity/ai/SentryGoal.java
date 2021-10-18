@@ -5,7 +5,7 @@ import org.jetbrains.annotations.Nullable;
 import dev.jadethecat.humans.HumansConfig;
 import dev.jadethecat.humans.entity.HumanEntity;
 import me.shedaniel.autoconfig.AutoConfig;
-import net.minecraft.entity.ai.NoPenaltyTargeting;
+import net.minecraft.entity.ai.NoWaterTargeting;
 import net.minecraft.entity.ai.goal.WanderAroundGoal;
 import net.minecraft.entity.mob.PathAwareEntity;
 import net.minecraft.util.math.BlockPos;
@@ -27,7 +27,7 @@ public class SentryGoal extends WanderAroundGoal {
         if (this.mob instanceof HumanEntity) {
             HumansConfig config = AutoConfig.getConfigHolder(HumansConfig.class).getConfig();
             BlockPos home = ((HumanEntity)this.mob).getHomePos().get();
-            return NoPenaltyTargeting.find(this.mob, config.humanSentryWanderRange, 7, Vec3d.ofBottomCenter(home), 1.5707963705062866D);
+            return NoWaterTargeting.find(this.mob, config.humanSentryWanderRange, 7, 0, Vec3d.ofBottomCenter(home), 1.5707963705062866D);
         } else {
             return null;
         }

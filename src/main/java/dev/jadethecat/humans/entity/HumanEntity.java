@@ -1,6 +1,8 @@
 package dev.jadethecat.humans.entity;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import com.mojang.authlib.GameProfile;
@@ -10,6 +12,8 @@ import org.jetbrains.annotations.Nullable;
 
 import dev.jadethecat.humans.Humans;
 import dev.jadethecat.humans.HumansConfig;
+import dev.jadethecat.humans.client.ui.FluteHumanGui;
+import dev.jadethecat.humans.client.ui.FluteScreen;
 import dev.jadethecat.humans.components.HumansComponents;
 import dev.jadethecat.humans.entity.ai.FollowBestFriendGoal;
 import dev.jadethecat.humans.entity.ai.HumanWanderGoal;
@@ -28,7 +32,6 @@ import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
-import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
 import net.minecraft.entity.ai.pathing.LandPathNodeMaker;
 import net.minecraft.entity.ai.pathing.MobNavigation;
 import net.minecraft.entity.ai.pathing.PathNodeType;
@@ -37,7 +40,6 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
-import net.minecraft.entity.data.TrackedDataHandler;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -74,25 +76,32 @@ import net.minecraft.world.event.GameEvent;
 
 public class HumanEntity extends PathAwareEntity implements Angerable {
     private static final TrackedData<NbtCompound> SKIN_PROFILE;
-    private static final TrackedData<Boolean> LEGACY_SOUND;
 	private static final UniformIntProvider ANGER_TIME_RANGE;
     private static final TrackedData<NbtCompound> AFFINITY;
     private static final TrackedData<Optional<UUID>> BEST_FRIEND;
-    private static final TrackedData<Boolean> SLIM_SKIN;
-    private static final TrackedData<Boolean> LEGACY_ANIMATION;
     private static final TrackedData<String> STATE;
     private static final TrackedData<Optional<BlockPos>> HOME_POS;
+    /**
+     * Human Flags.
+     * 0b00000001 - Legacy Sound.
+     * 0b00000010 - Legacy Animation.
+     * 0b00000100 - Slim Skin.
+     * 0b00001000 - Skin Lock.
+     */
+    private static final TrackedData<Byte> HUMAN_FLAGS;
+    public static final byte LEGACY_SOUND_MASK =         (byte)0b00000001;
+    public static final byte LEGACY_ANIMATION_MASK =     (byte)0b00000010;
+    public static final byte SLIM_SKIN_MASK =            (byte)0b00000100;
+    public static final byte SKIN_LOCK_MASK =            (byte)0b00001000;
 
     static {
         SKIN_PROFILE = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.TAG_COMPOUND);
-        LEGACY_SOUND = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
         AFFINITY = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.TAG_COMPOUND);
 		ANGER_TIME_RANGE = TimeHelper.betweenSeconds(20, 39);
         BEST_FRIEND = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
-        SLIM_SKIN = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
-        LEGACY_ANIMATION = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
         STATE = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.STRING);
         HOME_POS = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_POS);
+        HUMAN_FLAGS = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.BYTE);
     }
 
     public static final int MAX_AFFINITY = 1000;
@@ -100,7 +109,8 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
     public static final String FOLLOWING_STATE = "humans:following";
     public static final String SENTRY_STATE = "humans:sentry";
     public static final String WAITING_STATE = "humans:waiting";
-    public static final String NONE_STATE = "none";
+    public static final String NONE_STATE = "humans:none";
+    public static Set<String> humanStates = new HashSet<>();
     private int angerTime;
     private UUID angeryAt;
     private UUID previouslyAngryAt;
@@ -127,15 +137,19 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         if (config.exclusivelySpawnNamed || this.getRandom().nextFloat() < config.chanceToSpawnNamed) {
             int i = this.getRandom().nextInt(config.spawnableNames.size());
             this.setCustomName(new LiteralText(config.spawnableNames.get(i).name));
-            this.dataTracker.set(SLIM_SKIN, config.spawnableNames.get(i).slimSkin);
+            if (config.spawnableNames.get(i).slimSkin)
+                this.dataTracker.set(HUMAN_FLAGS, SLIM_SKIN_MASK);
         } else if (this.getRandom().nextFloat() < config.chanceToSpawnMojangsta) {
             int i = this.getRandom().nextInt(config.spawnableMojangstas.size());
             this.setCustomName(new LiteralText(config.spawnableMojangstas.get(i).name).formatted(Formatting.GOLD));
-            this.dataTracker.set(SLIM_SKIN, config.spawnableMojangstas.get(i).slimSkin);
+            if (config.spawnableMojangstas.get(i).slimSkin)
+                this.dataTracker.set(HUMAN_FLAGS, SLIM_SKIN_MASK);
         } else {
-            if (this.getRandom().nextFloat() < config.chanceToSpawnSlim) this.dataTracker.set(SLIM_SKIN, true);
-            if (this.getRandom().nextFloat() < config.chanceToSpawnWithLegacyAnimation) this.dataTracker.set(LEGACY_ANIMATION, true);
-            if (this.getRandom().nextFloat() < config.chanceToSpawnWithLegacySounds) this.dataTracker.set(LEGACY_SOUND, true);
+            byte flags = (byte)0;
+            if (this.getRandom().nextFloat() < config.chanceToSpawnSlim) flags |= SLIM_SKIN_MASK;
+            if (this.getRandom().nextFloat() < config.chanceToSpawnWithLegacyAnimation) flags |= LEGACY_ANIMATION_MASK;
+            if (this.getRandom().nextFloat() < config.chanceToSpawnWithLegacySounds) flags |= LEGACY_SOUND_MASK;
+            this.dataTracker.set(HUMAN_FLAGS, flags);
         }
         return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
     }
@@ -143,13 +157,11 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
     protected void initDataTracker() {
         super.initDataTracker();
         this.dataTracker.startTracking(SKIN_PROFILE, new NbtCompound());
-        this.dataTracker.startTracking(LEGACY_SOUND, false);
         this.dataTracker.startTracking(AFFINITY, new NbtCompound());
         this.dataTracker.startTracking(BEST_FRIEND, Optional.empty());
-        this.dataTracker.startTracking(SLIM_SKIN, false);
-        this.dataTracker.startTracking(LEGACY_ANIMATION, false);
-        this.dataTracker.startTracking(STATE, "none");
+        this.dataTracker.startTracking(STATE, NONE_STATE);
         this.dataTracker.startTracking(HOME_POS, Optional.empty());
+        this.dataTracker.startTracking(HUMAN_FLAGS, (byte)0);
     }
     
     protected void initGoals() {
@@ -166,6 +178,12 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 		this.targetSelector.add(2, new FollowTargetGoal<MobEntity>(this, MobEntity.class, 5, false, false, (entity) -> {
 			return entity instanceof Monster && !Humans.HUMAN_IGNORED_MOBS.contains(entity.getType()) && !entity.isSwimming();
 		}));
+    }
+
+    public static void initStates() {
+        humanStates.add(FOLLOWING_STATE);
+        humanStates.add(SENTRY_STATE);
+        humanStates.add(WAITING_STATE);
     }
 
     @Override
@@ -211,13 +229,13 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
     @Override
     @Nullable
 	protected SoundEvent getHurtSound(DamageSource source) {
-		return this.dataTracker.get(LEGACY_SOUND) ? Humans.LEGACY_HURT_SOUND_EVENT : SoundEvents.ENTITY_PLAYER_HURT;
+		return this.usesLegacySound() ? Humans.LEGACY_HURT_SOUND_EVENT : SoundEvents.ENTITY_PLAYER_HURT;
 	}
 
     @Override
 	@Nullable
 	protected SoundEvent getDeathSound() {
-		return this.dataTracker.get(LEGACY_SOUND) ? Humans.LEGACY_HURT_SOUND_EVENT : SoundEvents.ENTITY_PLAYER_DEATH;
+		return this.usesLegacySound() ? Humans.LEGACY_HURT_SOUND_EVENT : SoundEvents.ENTITY_PLAYER_DEATH;
 	}
 
     @Nullable
@@ -253,6 +271,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
             this.dataTracker.set(BEST_FRIEND, Optional.empty());
         } else {
             this.dataTracker.set(BEST_FRIEND, Optional.of(bestFriendUuid));
+            this.dataTracker.set(STATE, FOLLOWING_STATE);
             PlayerEntity newBestFriend = this.world.getPlayerByUuid(bestFriendUuid);
             HumansComponents.PARTY.get(newBestFriend).add(this.getUuid());
         }
@@ -337,6 +356,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         return Pair.of(oldAffinity, affinityCompound);
     }
 
+
     public boolean hasHighAffinity() {
         NbtCompound compound = this.dataTracker.get(AFFINITY);
         for (String k : compound.getKeys()) {
@@ -348,16 +368,49 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         return false;
     }
 
-    public boolean usesSlimSkin() {
-        return this.dataTracker.get(SLIM_SKIN);
+    public boolean usesLegacySound() {
+        return ((this.dataTracker.get(HUMAN_FLAGS) >> 0) & 1) == 1;
     }
 
     public boolean usesLegacyAnim() {
-        return this.dataTracker.get(LEGACY_ANIMATION);
+        return ((this.dataTracker.get(HUMAN_FLAGS) >> 1) & 1) == 1;
     }
 
-    public boolean usesLegacySound() {
-        return this.dataTracker.get(LEGACY_SOUND);
+    public boolean usesSlimSkin() {
+        return ((this.dataTracker.get(HUMAN_FLAGS) >> 2) & 1) == 1;
+    }
+
+    public boolean getSkinLock() {
+        return ((this.dataTracker.get(HUMAN_FLAGS) >> 3) & 1) == 1;
+    }
+
+    public void setFlags(byte flags) {
+        this.dataTracker.set(HUMAN_FLAGS, flags);
+    }
+
+    public byte getFlags() {
+        return this.dataTracker.get(HUMAN_FLAGS);
+    }
+    
+    public void setFlag(byte mask, boolean value) {
+        byte flags = this.getFlags();
+        if (value)
+            flags |= mask;
+        else
+            flags &= ~(mask);
+        this.setFlags(flags);
+    }
+
+    public boolean getFlag(byte mask) {
+        int shiftBy = 0;
+        for (int i = 0; i < 8; i++) {
+            if ((mask & 1) == 1) {
+                shiftBy = i;
+                break;
+            }
+        }
+        byte flags = this.getFlags();
+        return ((flags >> shiftBy) & 1) == 1;
     }
 
     public String getState() {
@@ -382,31 +435,9 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 
     @Override
     public void setCustomName(@Nullable Text name) {
-        String nameString = name.asString();
-        if (nameString.contains("&L")) {
-            this.dataTracker.set(LEGACY_SOUND, !this.dataTracker.get(LEGACY_SOUND));
-            nameString = nameString.replace("&L", "");
-        }
-
-        if (nameString.contains("&S")) {
-            this.dataTracker.set(SLIM_SKIN, !this.dataTracker.get(SLIM_SKIN));
-            nameString = nameString.replace("&S", "");
-        }
-
-        if (nameString.contains("&A")) {
-            this.dataTracker.set(LEGACY_ANIMATION, !this.dataTracker.get(LEGACY_ANIMATION));
-            nameString = nameString.replace("&A", "");
-        }
-
-        if (nameString.isBlank()) return;
-
-        boolean keepSkin = nameString.contains("&K");
-        if (keepSkin) nameString = nameString.replace("&K", "");
-
-        name = new LiteralText(nameString);
         super.setCustomName(name);
         GameProfile gprofile = getSkinProfile();
-        if (name != null && !keepSkin && (gprofile == null || gprofile.getName() != name.asString())) {
+        if (name != null && !this.getSkinLock() && (gprofile == null || gprofile.getName() != name.asString())) {
             Optional<GameProfile> profile = SkullBlockEntityAccessor.getUserCache().findByName(name.asString());
             if (profile.isPresent()) {
                 GameProfile profile2;
@@ -422,48 +453,66 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 
     @Override
     public void writeCustomDataToNbt(NbtCompound nbt) {
+        if (nbt.contains("UseLegacySound") || nbt.contains("UseLegacyAnimation") || 
+            nbt.contains("UseSlimSkin") || nbt.contains("SkinLock")) nbt = convertToFlagByte(nbt);
 		super.writeCustomDataToNbt(nbt);
         NbtCompound compound = new NbtCompound();
         GameProfile prof = this.getSkinProfile();
         if (prof != null)
             NbtHelper.writeGameProfile(compound, prof);
 		nbt.put("SkinProfile", compound);
-		nbt.putBoolean("UseLegacySound", (boolean)this.dataTracker.get(LEGACY_SOUND));
         nbt.put("Affinity", this.dataTracker.get(AFFINITY));
-        nbt.putBoolean("UseSlimSkin", this.dataTracker.get(SLIM_SKIN));
         if (this.dataTracker.get(BEST_FRIEND).isPresent()) {
             nbt.putUuid("BestFriend", this.dataTracker.get(BEST_FRIEND).get());
         }
-        nbt.putBoolean("UseLegacyAnimation", this.dataTracker.get(LEGACY_ANIMATION));
         nbt.putString("State", this.dataTracker.get(STATE));
         if (this.dataTracker.get(HOME_POS).isPresent()) {
             BlockPos home = this.dataTracker.get(HOME_POS).get();
             nbt.putIntArray("HomePos", new int[]{home.getX(), home.getY(), home.getZ()});
         }
+        nbt.putByte("HumanFlags", this.dataTracker.get(HUMAN_FLAGS));
 	}
 
     @Override
 	public void readCustomDataFromNbt(NbtCompound nbt) {
+        if (nbt.contains("UseLegacySound") || nbt.contains("UseLegacyAnimation") || 
+            nbt.contains("UseSlimSkin") || nbt.contains("SkinLock")) nbt = convertToFlagByte(nbt);
+        
 		super.readCustomDataFromNbt(nbt);
         if (nbt.contains("SkinProfile"))
             this.setSkinProfile(NbtHelper.toGameProfile(nbt.getCompound("SkinProfile")));
-		if (nbt.contains("UseLegacySound"))
-			this.dataTracker.set(LEGACY_SOUND, nbt.getBoolean("UseLegacySound"));
         if (nbt.contains("Affinity"))
             this.dataTracker.set(AFFINITY, nbt.getCompound("Affinity"));
         if (nbt.contains("BestFriend"))
             this.dataTracker.set(BEST_FRIEND, Optional.of(nbt.getUuid("BestFriend")));
-        if (nbt.contains("UseSlimSkin"))
-            this.dataTracker.set(SLIM_SKIN, nbt.getBoolean("UseSlimSkin"));
-        if (nbt.contains("UseLegacyAnimation"))
-            this.dataTracker.set(LEGACY_ANIMATION, nbt.getBoolean("UseLegacyAnimation"));
         if (nbt.contains("State"))
             this.dataTracker.set(STATE, nbt.getString("State"));
         if (nbt.contains("HomePos")) {
             int[] home = nbt.getIntArray("HomePos");
-            this.dataTracker.set(HOME_POS, Optional.of(new BlockPos(home[0], home[1], home[3])));
+            this.dataTracker.set(HOME_POS, Optional.of(new BlockPos(home[0], home[1], home[2])));
         }
 	}
+    private NbtCompound convertToFlagByte(NbtCompound compound) {
+        byte flagByte = 0;
+        if (compound.contains("UseLegacySound") && compound.getBoolean("UseLegacySound")) {
+            flagByte |= 1;
+            compound.remove("UseLegacySound");
+        }
+        if (compound.contains("UseLegacyAnimation") && compound.getBoolean("UseLegacyAnimation")) {
+            flagByte |= 2;
+            compound.remove("UseLegacyAnimation");
+        }
+        if (compound.contains("UseSlimSkin") && compound.getBoolean("UseSlimSkin")) {
+            flagByte |= 4;
+            compound.remove("UseSlimSkin");
+        }
+        if (compound.contains("SkinLock") && compound.getBoolean("SkinLock")) {
+            flagByte |= 8;
+            compound.remove("SkinLock");
+        }
+        compound.putByte("HumanFlags", flagByte);
+        return compound;
+    }
 
     @Override
     public void tickMovement() {
@@ -669,8 +718,13 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
                 return ActionResult.SUCCESS;
             } else if (Humans.HUMAN_LIKED_ITEMS.contains(item)) {
                 return ActionResult.CONSUME;
+            } else if (item == Humans.FLUTE 
+                        && this.getBestFriend().isPresent() 
+                        && this.getBestFriend().get() == player.getUuid()) {
+                MinecraftClient.getInstance().setScreen(new FluteScreen(new FluteHumanGui(this)));
+                return ActionResult.SUCCESS;
             }
-            return ActionResult.SUCCESS;
+            return ActionResult.FAIL;
         } else {
             if (item == Humans.HEART_LOCKET && this.getAffinity(player.getUuid()) >= HIGH_AFFINITY) {
                 if (this.getBestFriend().isPresent() && this.getBestFriend().get() != player.getUuid()) {
@@ -712,6 +766,10 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
                 stack.setCount(stack.getCount() - 1);
                 player.setStackInHand(hand, stack);
                 return ActionResult.CONSUME;
+            } else if (item == Humans.FLUTE 
+                        && this.getBestFriend().isPresent() 
+                        && this.getBestFriend().get() == player.getUuid()) {
+                return ActionResult.SUCCESS;
             }
             return ActionResult.FAIL;
         }

@@ -9,12 +9,15 @@ import net.minecraft.util.Identifier;
 public class HumanListItem extends WPlainPanel {
     WSprite sprite;
     WLabel name;
+    WLabel state;
     
     public HumanListItem() {
         sprite = new WSprite(new Identifier("humans:flute"));
         this.add(sprite, 2, 2, 18, 18);
         name = new WLabel(new TranslatableText("gui.humans.flute.human_no_name"));
         this.add(name, 18+4, 2, 5*18, 18);
+        state = new WLabel(new TranslatableText("entity.humans.human_state.none"));
+        this.add(state, 18+4, 9+2, 5*18, 18);
         this.setSize(7*18, 2*18);
     }
 }

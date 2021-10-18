@@ -58,5 +58,6 @@ public class Humans implements ModInitializer {
 		FabricDefaultAttributeRegistry.register(HUMAN, HumanEntity.createHumanAttributes());
 		AutoConfig.register(HumansConfig.class, Toml4jConfigSerializer::new);
 		HumansServerPlay.initReceiviers();
+		HumanEntity.initStates();
 	}
 }
