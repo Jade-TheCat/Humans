@@ -4,13 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import dev.jadethecat.humans.client.ui.FlutePartyGui;
-import dev.jadethecat.humans.client.ui.FluteScreen;
+import dev.jadethecat.humans.client.HumansClient;
 import dev.jadethecat.humans.components.HumansComponents;
 import dev.jadethecat.humans.entity.HumanEntity;
 import dev.jadethecat.humans.mixin.WorldInvoker;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -37,7 +35,7 @@ public class FluteItem extends Item {
                 if (e instanceof HumanEntity) {
                     humans.add((HumanEntity)e);
                 }
-                MinecraftClient.getInstance().setScreen(new FluteScreen(new FlutePartyGui(user, humans)));
+                HumansClient.openFlutePartyScreen(user, humans);
             }
         }
         return super.use(world, user, hand);

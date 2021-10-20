@@ -12,8 +12,7 @@ import org.jetbrains.annotations.Nullable;
 
 import dev.jadethecat.humans.Humans;
 import dev.jadethecat.humans.HumansConfig;
-import dev.jadethecat.humans.client.ui.FluteHumanGui;
-import dev.jadethecat.humans.client.ui.FluteScreen;
+import dev.jadethecat.humans.client.HumansClient;
 import dev.jadethecat.humans.components.HumansComponents;
 import dev.jadethecat.humans.entity.ai.FollowBestFriendGoal;
 import dev.jadethecat.humans.entity.ai.HumanWanderGoal;
@@ -283,7 +282,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
             } else if (item == Humans.FLUTE 
                         && this.getBestFriend().isPresent() 
                         && this.getBestFriend().get() == player.getUuid()) {
-                MinecraftClient.getInstance().setScreen(new FluteScreen(new FluteHumanGui(this)));
+                            HumansClient.openFluteScreen(this);
                 return ActionResult.SUCCESS;
             }
             return ActionResult.FAIL;
