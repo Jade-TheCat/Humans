@@ -37,11 +37,12 @@ public class FlutePartyGui extends LightweightGuiDescription {
         setRootPanel(root);
         root.setSize(11*18, 13*18);
         root.setInsets(Insets.ROOT_PANEL);
+        // Title of the page
         WLabel title = new WLabel(new TranslatableText("gui.humans.flute.party_management"))
                             .setHorizontalAlignment(HorizontalAlignment.CENTER);
         root.add(title, 0, 0, 13, 1);
 
-
+        // Configurator for the WListPanel of the Party.
         BiConsumer<HumanEntity, HumanListItem> configurator = (HumanEntity e, HumanListItem item) -> {
             MinecraftClient client = MinecraftClient.getInstance();
             Identifier textureId;
@@ -62,10 +63,12 @@ public class FlutePartyGui extends LightweightGuiDescription {
             Identifier stateId = new Identifier(e.getState());
             item.state.setText(new TranslatableText("entity."+stateId.getNamespace()+".human_state."+stateId.getPath()));
         };
+        // List of Humans in the party.
         WListPanel<HumanEntity, HumanListItem> humanList = new WListPanel<>(humans, HumanListItem::new, configurator);
         humanList.setListItemHeight(2*18);
         root.add(humanList, 0, 2, 13, 6);
 
+        // Teleports the player's full party.
         WButton summonPartyButton = new WButton(new TranslatableText("gui.humans.flute.summon_party"));
         List<UUID> party = HumansComponents.PARTY.get(player).getList();
         summonPartyButton.setOnClick(() -> {
@@ -81,6 +84,7 @@ public class FlutePartyGui extends LightweightGuiDescription {
         });
         root.add(summonPartyButton, 0, 9, 13, 1);
 
+        // Sets all of the player's party to wait in a location.
         WButton partyStayButton = new WButton(new TranslatableText("gui.humans.flute.party_stay"));
         partyStayButton.setOnClick(() -> {
             PacketByteBuf buf = new PacketByteBuf(ByteBufAllocator.DEFAULT.buffer());
@@ -95,6 +99,7 @@ public class FlutePartyGui extends LightweightGuiDescription {
         });
         root.add(partyStayButton, 0, 11, 6, 1);
         
+        // Sets all Humans in the player's party to follow them.
         WButton partyFollowButton = new WButton(new TranslatableText("gui.humans.flute.party_follow"));
         partyFollowButton.setOnClick(() -> {
             PacketByteBuf buf = new PacketByteBuf(ByteBufAllocator.DEFAULT.buffer());

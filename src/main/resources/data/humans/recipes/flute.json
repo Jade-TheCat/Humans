@@ -6,9 +6,14 @@
         "# #"
     ],
     "key": {
-        "#": {
-            "item": "minecraft:gold_nugget"
-        },
+        "#": [
+            {
+                "item": "minecraft:gold_nugget"
+            },
+            {
+                "tag": "c:brass_nuggets"
+            }
+        ],
         "R": {
             "item": "minecraft:sugar_cane"
         }

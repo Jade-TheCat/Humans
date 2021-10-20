@@ -55,8 +55,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtHelper;
-import net.minecraft.particle.ParticleEffect;
-import net.minecraft.particle.ParticleTypes;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
@@ -95,26 +93,37 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
     public static final byte SKIN_LOCK_MASK =            (byte)0b00001000;
 
     static {
+        // SKIN_PROFILE is the GameProfile which contains the Human's skin.
         SKIN_PROFILE = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.TAG_COMPOUND);
+        // AFFINITY tracks the Human's affinity with players.
         AFFINITY = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.TAG_COMPOUND);
+        // ANGER_TIME_RANGE is used for the anger mechanics.
 		ANGER_TIME_RANGE = TimeHelper.betweenSeconds(20, 39);
+        // BEST_FRIEND tracks which player the Human follows and listens to.
         BEST_FRIEND = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.OPTIONAL_UUID);
+        // STATE tracks what the Human is doing.
         STATE = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.STRING);
+        // HOME_POS tracks where a Human will be a Sentry.
         HOME_POS = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.OPTIONAL_BLOCK_POS);
+        // HUMAN_FLAGS contains flags for rendering of a Human, including a lock to prevent changes to skin.
         HUMAN_FLAGS = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.BYTE);
     }
 
+    // MAX_AFFINITY is the maximum affinity a player can have with a Human.
     public static final int MAX_AFFINITY = 1000;
+    // HIGH_AFFINITY is the affinity a player needs too become a Human's best friend.
     public static final int HIGH_AFFINITY = MathHelper.floor(MAX_AFFINITY*0.75);
+    // the following are constants to help with setting a Human's state.
     public static final String FOLLOWING_STATE = "humans:following";
     public static final String SENTRY_STATE = "humans:sentry";
     public static final String WAITING_STATE = "humans:waiting";
     public static final String NONE_STATE = "humans:none";
     public static Set<String> humanStates = new HashSet<>();
+    // Anger-related variables, used by the Angerable functions.
     private int angerTime;
     private UUID angeryAt;
     private UUID previouslyAngryAt;
-    protected PlayerEntity leader;
+    // Cape-related variables for rendering.
 	public double prevCapeX;
 	public double prevCapeY;
 	public double prevCapeZ;
@@ -131,6 +140,11 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 		this.setCanPickUpLoot(true);
     }
 
+    /**
+     * <h3>Initialize a human.</h3>
+     * Runs on spawn, decides the Human's characteristics, specifically: 
+     * If the Human has a name from the config, if the human has a name and skin of a Mojangsta from the config, or if they have a slim skin, legacy animations, and/or legacy sounds. All of the chances for these is in {@link dev.jadethecat.humans.HumansConfig}.
+     */
     @Override
     public EntityData initialize(ServerWorldAccess world, LocalDifficulty difficulty, SpawnReason spawnReason, @Nullable EntityData entityData, @Nullable NbtCompound entityNbt) {
         HumansConfig config = AutoConfig.getConfigHolder(HumansConfig.class).getConfig();
@@ -154,6 +168,10 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         return super.initialize(world, difficulty, spawnReason, entityData, entityNbt);
     }
 
+    /**
+     * <h3>Initialize the DataTracker</h3>
+     * The DataTracker syncs data between server and client. Most of the Human's variables are used for rendering, and need to be on the client too.
+     */
     protected void initDataTracker() {
         super.initDataTracker();
         this.dataTracker.startTracking(SKIN_PROFILE, new NbtCompound());
@@ -163,7 +181,11 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         this.dataTracker.startTracking(HOME_POS, Optional.empty());
         this.dataTracker.startTracking(HUMAN_FLAGS, (byte)0);
     }
-    
+    /**
+     * <h3>Initialize Human AI goals.</h3>
+     * First block initializes the goalSelector, the second initializes the targetSelector.
+     * Goals are used because they are simpler, and Humans don't need too complex of memory.
+     */
     protected void initGoals() {
         this.goalSelector.add(0, new SwimGoal(this));
 		this.goalSelector.add(1, new MeleeAttackGoal(this, 0.35D, false));
@@ -180,23 +202,32 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 		}));
     }
 
+    /**
+     * Puts states in the {@link dev.jadethecat.humans.entity.HumanEntity#humanStates} Set.
+     * 
+     * @see dev.jadethecat.humans.Humans#onInitialize()
+     */
     public static void initStates() {
         humanStates.add(FOLLOWING_STATE);
         humanStates.add(WAITING_STATE);
         humanStates.add(SENTRY_STATE);
     }
 
-    @Override
-    public boolean canMoveVoluntarily() {
-        return this.dataTracker.get(STATE) != WAITING_STATE && super.canMoveVoluntarily();
-    }
-
+    /**
+     * Gives Humans their {@link net.minecraft.entity.attribute.EntityAttributes}.
+     * @return The EntityAttributes.
+     */
     public static DefaultAttributeContainer.Builder createHumanAttributes() {
         return MobEntity.createMobAttributes()
             .add(EntityAttributes.GENERIC_ATTACK_DAMAGE, 1)
             .add(EntityAttributes.GENERIC_FOLLOW_RANGE, 50);
     }
 
+    /**
+     * Ranks an item by the affinity to give a player for a human.
+     * @param item The item to rank
+     * @return int Amount of Affinity a player should get for giving a Human the item
+     */
     public static int rankLikedItem(Item item) {
         if (item.getFoodComponent() != null) {
             if (item == Items.ENCHANTED_GOLDEN_APPLE) {
@@ -225,18 +256,86 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         }
         return 0;
     }
-
+    
+    /**
+     * <h3>Interaction handler</h3>
+     * Handles when a player interacts with a Human.
+     * Opens the Flute GUI for managing a human if holding a flute, does various things if holding a Heart-Shaped Locket.
+     */
     @Override
-    @Nullable
-	protected SoundEvent getHurtSound(DamageSource source) {
-		return this.usesLegacySound() ? Humans.LEGACY_HURT_SOUND_EVENT : SoundEvents.ENTITY_PLAYER_HURT;
-	}
-
-    @Override
-	@Nullable
-	protected SoundEvent getDeathSound() {
-		return this.usesLegacySound() ? Humans.LEGACY_HURT_SOUND_EVENT : SoundEvents.ENTITY_PLAYER_DEATH;
-	}
+    public ActionResult interactMob(PlayerEntity player, Hand hand) {
+        ItemStack stack = player.getStackInHand(hand);
+        Item item = stack.getItem();
+        String name = this.hasCustomName() ? this.getCustomName().asString() : TranslationStorage.getInstance().get("entity.human.this_human");
+        if (this.world.isClient) {
+            if (item == Humans.HEART_LOCKET && this.getAffinity(player.getUuid()) >= HIGH_AFFINITY) {
+                if (this.getBestFriend().isPresent() && this.getBestFriend().get() != player.getUuid()) {
+                    return ActionResult.FAIL;
+                } else {
+                        return ActionResult.SUCCESS;
+                }
+            } else if (item == Humans.HEART_LOCKET) {
+                return ActionResult.FAIL;
+            } else if (item == Items.POPPY) {
+                return ActionResult.SUCCESS;
+            } else if (Humans.HUMAN_LIKED_ITEMS.contains(item)) {
+                return ActionResult.CONSUME;
+            } else if (item == Humans.FLUTE 
+                        && this.getBestFriend().isPresent() 
+                        && this.getBestFriend().get() == player.getUuid()) {
+                MinecraftClient.getInstance().setScreen(new FluteScreen(new FluteHumanGui(this)));
+                return ActionResult.SUCCESS;
+            }
+            return ActionResult.FAIL;
+        } else {
+            if (item == Humans.HEART_LOCKET && this.getAffinity(player.getUuid()) >= HIGH_AFFINITY) {
+                if (this.getBestFriend().isPresent() && this.getBestFriend().get() != player.getUuid()) {
+                    player.sendMessage(new TranslatableText("entity.human.best_friend_exists", name).formatted(Formatting.RED), true);
+                    return ActionResult.FAIL;
+                } else if (this.getBestFriend().isPresent()) {
+                    if (player.isSneaking()) {
+                        this.setBestFriend(null);
+                        player.sendMessage(
+                            new TranslatableText("entity.human.best_friend_removed", name)
+                            .formatted(Formatting.RED), true);
+                        return ActionResult.SUCCESS;
+                    }
+                    player.sendMessage(
+                        new TranslatableText("entity.human.best_friend_already", name)
+                        .formatted(Formatting.GOLD), true);
+                    return ActionResult.SUCCESS;
+                } else {
+                    this.setBestFriend(player.getUuid());
+                    player.sendMessage(
+                        new TranslatableText("entity.human.best_friend_set", name)
+                        .formatted(Formatting.GREEN), true);
+                    return ActionResult.SUCCESS;
+                }
+            } else if (item == Humans.HEART_LOCKET) {
+                player.sendMessage(
+                    new TranslatableText("entity.human.low_affinity", 
+                        name,
+                        this.getAffinity(player.getUuid()),
+                        HIGH_AFFINITY)
+                    .formatted(Formatting.RED), false);
+                return ActionResult.FAIL;
+            } else if (item == Items.POPPY) {
+                this.setHomePos(this.getBlockPos());
+                return ActionResult.SUCCESS;
+            } else if (Humans.HUMAN_LIKED_ITEMS.contains(item)) {
+                tryEquip(stack);
+                this.addAffinity(player.getUuid(), rankLikedItem(item));
+                stack.setCount(stack.getCount() - 1);
+                player.setStackInHand(hand, stack);
+                return ActionResult.CONSUME;
+            } else if (item == Humans.FLUTE 
+                        && this.getBestFriend().isPresent() 
+                        && this.getBestFriend().get() == player.getUuid()) {
+                return ActionResult.SUCCESS;
+            }
+            return ActionResult.FAIL;
+        }
+    }
 
     @Nullable
     public GameProfile getSkinProfile() {
@@ -264,8 +363,9 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
     public void setBestFriend(@Nullable UUID bestFriendUuid) {
         if (bestFriendUuid == null) {
             if (this.getBestFriend().isPresent()) {
-                PlayerEntity bestFriend = this.world.getPlayerByUuid(uuid);
-                HumansComponents.PARTY.get(bestFriend).remove(this.getUuid());
+                UUID bestFriendToRemove = this.getBestFriend().get();
+                PlayerEntity bestFriend = this.world.getPlayerByUuid(bestFriendToRemove);
+                if (bestFriend != null) HumansComponents.PARTY.get(bestFriend).remove(this.getUuid());
                 this.dataTracker.set(STATE, SENTRY_STATE);
             }
             this.dataTracker.set(BEST_FRIEND, Optional.empty());
@@ -315,7 +415,6 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         this.dataTracker.set(AFFINITY, compound);
         if (affinity < 0) {
             setAngryAt(uuid);
-            this.produceParticles(ParticleTypes.ANGRY_VILLAGER);
         }
     }
 
@@ -325,8 +424,6 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 
     public void addAffinity(UUID uuid, int amount) {
         NbtCompound compound = this.dataTracker.get(AFFINITY);
-        if (amount < 0) this.produceParticles(ParticleTypes.ANGRY_VILLAGER);
-        if (amount > 0) this.produceParticles(ParticleTypes.HAPPY_VILLAGER);
         if (compound.contains(uuid.toString())) {
             NbtCompound affinitySet = compound.getCompound(uuid.toString());
             if (affinitySet != null) {
@@ -492,6 +589,12 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
             this.dataTracker.set(HOME_POS, Optional.of(new BlockPos(home[0], home[1], home[2])));
         }
 	}
+
+    /**
+     * Previous versions of Humans used a different data layout from current versions. This converts it for us, since Fabric DataFixer API is not released.
+     * @param compound The compound in the old format
+     * @return The compound, updated to the new format.
+     */
     private NbtCompound convertToFlagByte(NbtCompound compound) {
         byte flagByte = 0;
         if (compound.contains("UseLegacySound") && compound.getBoolean("UseLegacySound")) {
@@ -514,6 +617,9 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         return compound;
     }
 
+    /**
+     * Used for Cape render handling.
+     */
     @Override
     public void tickMovement() {
 		this.prevStrideDistance = this.strideDistance;
@@ -528,6 +634,22 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         this.strideDistance += (g - this.strideDistance) * 0.4F;
     }
 
+    /**
+     * Used for Cape render handling when riding.
+     */
+    @Override
+    public void tickRiding() {
+        super.tickRiding();
+        this.prevStrideDistance = this.strideDistance;
+        this.strideDistance = 0.0F;
+    }
+
+    /**
+     * Tick the Human. does a few things:
+     * 1. Updates the cape angles for this Human.
+     * 2. Ticks Affinity for those players who have it.
+     * 3. Randomly gives food or health to the Human's best friend if they are low.
+     */
     @Override
     public void tick() {
         super.tick();
@@ -547,6 +669,9 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         }
     }
 
+    /**
+     * Ticks affinity, which goes down by 5 every 2 in-game days.
+     */
     private void tickAffinity() {
         NbtCompound compound = this.dataTracker.get(AFFINITY);
         if (compound != null) {
@@ -573,6 +698,9 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         }
     }
 
+    /**
+     * Allows a Human to pick up items. May be removed eventually since they can be given items with right-click.
+     */
     @Override
     protected void loot(ItemEntity item) {
         ItemStack stack = item.getStack();
@@ -582,6 +710,9 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         super.loot(item);
     }
 
+    /**
+     * Allows a Human to equip an item, or eat to refill their health.
+     */
     @Override
     public boolean tryEquip(ItemStack equipment) {
         if (this.canPickupItem(equipment) && Humans.HUMAN_FOOD.contains(equipment.getItem())) {
@@ -600,14 +731,41 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         return super.tryEquip(equipment);
     }
 
+    /**
+     * Set affinity to -1 when a Player hits them with low affinity.
+     */
     @Override
     protected void applyDamage(DamageSource source, float amount) {
         if (!this.isInvulnerableTo(source) 
                 && !source.isSourceCreativePlayer() 
-                && source.getAttacker() instanceof PlayerEntity) {
+                && source.getAttacker() instanceof PlayerEntity
+                && this.getAffinity(source.getAttacker().getUuid()) < 200) {
             this.setAffinity(source.getAttacker().getUuid(), -1);
         }
         super.applyDamage(source, amount);
+    }
+
+    /**
+     * Makes sure the hurt sound is the old "oof" sound if the Human is set to do so.
+     */
+    @Override
+    @Nullable
+	protected SoundEvent getHurtSound(DamageSource source) {
+		return this.usesLegacySound() ? Humans.LEGACY_HURT_SOUND_EVENT : SoundEvents.ENTITY_PLAYER_HURT;
+	}
+
+    /**
+     * Makes sure the death sound is the old "oof" sound if the Human is set to do so.
+     */
+    @Override
+	@Nullable
+	protected SoundEvent getDeathSound() {
+		return this.usesLegacySound() ? Humans.LEGACY_HURT_SOUND_EVENT : SoundEvents.ENTITY_PLAYER_DEATH;
+	}
+
+    @Override
+    public boolean canMoveVoluntarily() {
+        return this.dataTracker.get(STATE) != WAITING_STATE && super.canMoveVoluntarily();
     }
 
     private void updateCapeAngles() {
@@ -652,23 +810,6 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 		this.capeY += e * 0.25D;
 	}
 
-    protected void produceParticles(ParticleEffect parameters) {
-		for(int i = 0; i < 5; ++i) {
-			double d = this.random.nextGaussian() * 0.02D;
-			double e = this.random.nextGaussian() * 0.02D;
-			double f = this.random.nextGaussian() * 0.02D;
-			this.world.addParticle(parameters, this.getParticleX(1.0D), this.getRandomBodyY() + 1.0D, this.getParticleZ(1.0D), d, e, f);
-		}
-
-	}
-
-    @Override
-    public void tickRiding() {
-        super.tickRiding();
-        this.prevStrideDistance = this.strideDistance;
-        this.strideDistance = 0.0F;
-    }
-
     @Override
     public int getAngerTime() {
         return this.angerTime;
@@ -700,81 +841,6 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         setAngerTime(ANGER_TIME_RANGE.get(this.random));
     }
 
-    @Override
-    public ActionResult interactMob(PlayerEntity player, Hand hand) {
-        ItemStack stack = player.getStackInHand(hand);
-        Item item = stack.getItem();
-        String name = this.hasCustomName() ? this.getCustomName().asString() : TranslationStorage.getInstance().get("entity.human.this_human");
-        if (this.world.isClient) {
-            if (item == Humans.HEART_LOCKET && this.getAffinity(player.getUuid()) >= HIGH_AFFINITY) {
-                if (this.getBestFriend().isPresent() && this.getBestFriend().get() != player.getUuid()) {
-                    return ActionResult.FAIL;
-                } else {
-                        return ActionResult.SUCCESS;
-                }
-            } else if (item == Humans.HEART_LOCKET) {
-                return ActionResult.FAIL;
-            } else if (item == Items.POPPY) {
-                return ActionResult.SUCCESS;
-            } else if (Humans.HUMAN_LIKED_ITEMS.contains(item)) {
-                return ActionResult.CONSUME;
-            } else if (item == Humans.FLUTE 
-                        && this.getBestFriend().isPresent() 
-                        && this.getBestFriend().get() == player.getUuid()) {
-                MinecraftClient.getInstance().setScreen(new FluteScreen(new FluteHumanGui(this)));
-                return ActionResult.SUCCESS;
-            }
-            return ActionResult.FAIL;
-        } else {
-            if (item == Humans.HEART_LOCKET && this.getAffinity(player.getUuid()) >= HIGH_AFFINITY) {
-                if (this.getBestFriend().isPresent() && this.getBestFriend().get() != player.getUuid()) {
-                    player.sendMessage(new TranslatableText("entity.human.best_friend_exists", name).formatted(Formatting.RED), true);
-                    return ActionResult.FAIL;
-                } else if (this.getBestFriend().isPresent()) {
-                    if (player.isSneaking()) {
-                        this.setBestFriend(null);
-                        player.sendMessage(
-                            new TranslatableText("entity.human.best_friend_removed", name)
-                            .formatted(Formatting.RED), true);
-                        return ActionResult.SUCCESS;
-                    }
-                    player.sendMessage(
-                        new TranslatableText("entity.human.best_friend_already", name)
-                        .formatted(Formatting.GOLD), true);
-                    return ActionResult.SUCCESS;
-                } else {
-                    this.setBestFriend(player.getUuid());
-                    player.sendMessage(
-                        new TranslatableText("entity.human.best_friend_set", name)
-                        .formatted(Formatting.GREEN), true);
-                    return ActionResult.SUCCESS;
-                }
-            } else if (item == Humans.HEART_LOCKET) {
-                player.sendMessage(
-                    new TranslatableText("entity.human.low_affinity", 
-                        name,
-                        this.getAffinity(player.getUuid()),
-                        HIGH_AFFINITY)
-                    .formatted(Formatting.RED), false);
-                return ActionResult.FAIL;
-            } else if (item == Items.POPPY) {
-                this.setHomePos(this.getBlockPos());
-                return ActionResult.SUCCESS;
-            } else if (Humans.HUMAN_LIKED_ITEMS.contains(item)) {
-                tryEquip(stack);
-                this.addAffinity(player.getUuid(), rankLikedItem(item));
-                stack.setCount(stack.getCount() - 1);
-                player.setStackInHand(hand, stack);
-                return ActionResult.CONSUME;
-            } else if (item == Humans.FLUTE 
-                        && this.getBestFriend().isPresent() 
-                        && this.getBestFriend().get() == player.getUuid()) {
-                return ActionResult.SUCCESS;
-            }
-            return ActionResult.FAIL;
-        }
-    }
-
     public boolean tryTeleportToBestFriend(PlayerEntity requester) {
         Humans.LOGGER.info("Try Teleport to Best Friend for " + this.getUuidAsString());
         if (this.getBestFriend().isPresent() && this.getBestFriend().get().equals(requester.getUuid())) {
@@ -793,6 +859,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
         Humans.LOGGER.info("Could not teleport to Best Friend.");
         return false;
     }
+
     private boolean tryTeleportTo(int x, int y, int z, PlayerEntity target) {
         if (Math.abs((double)x - target.getX()) < 2.0D && Math.abs((double)z - target.getZ()) < 2.0D) {
 			return false;

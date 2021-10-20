@@ -1,28 +1,36 @@
 package dev.jadethecat.humans;
 
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import dev.jadethecat.humans.entity.HumanEntity;
+import dev.jadethecat.humans.events.HumansServerPlay;
 import dev.jadethecat.humans.item.FluteItem;
-import dev.jadethecat.humans.network.HumansServerPlay;
 import dev.jadethecat.humans.world.Spawning;
 import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.serializer.Toml4jConfigSerializer;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.fabricmc.fabric.api.tag.TagFactory;
 import net.minecraft.block.Block;
+import net.minecraft.command.argument.EntityArgumentType;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.SpawnEggItem;
+import net.minecraft.server.command.CommandManager;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.tag.Tag;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
@@ -60,8 +68,28 @@ public class Humans implements ModInitializer {
 		Registry.register(Registry.SOUND_EVENT, LEGACY_HURT_SOUND_ID, LEGACY_HURT_SOUND_EVENT);
 		FabricDefaultAttributeRegistry.register(HUMAN, HumanEntity.createHumanAttributes());
 		AutoConfig.register(HumansConfig.class, Toml4jConfigSerializer::new);
-		HumansServerPlay.initReceiviers();
+		HumansServerPlay.initServerPlayEvents();
 		HumanEntity.initStates();
 		Spawning.addHumanToBiomes();
+		CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
+            dispatcher.register(CommandManager.literal("humans")
+				.then(CommandManager.literal("clearbestfriend")
+					.then(CommandManager.argument("target", EntityArgumentType.entity())
+					.requires(source -> source.hasPermissionLevel(4))
+					.executes(context -> {
+						Entity e = EntityArgumentType.getEntity(context, "target");
+						if (e instanceof HumanEntity) {
+							HumanEntity h = (HumanEntity)e;
+							h.setBestFriend(null);
+							context.getSource().sendFeedback(new TranslatableText("command.humans.cleared_best_friend", h.getName()), true);
+							return 1;
+						}
+						Text message = new TranslatableText("command.humans.not_human");
+						context.getSource().sendError(message);
+						throw new SimpleCommandExceptionType(message).create();
+					}))
+				)
+			);
+        });
 	}
 }

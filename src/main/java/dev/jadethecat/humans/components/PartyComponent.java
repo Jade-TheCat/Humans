@@ -90,7 +90,11 @@ public class PartyComponent implements ListComponent<UUID>, AutoSyncedComponent 
 
     @Override
     public boolean remove(UUID value) {
-        return this.value.removeIf((uuid) -> uuid.equals(value));
+        if (this.value.contains(value)) {
+            return this.value.removeIf((uuid) -> uuid.equals(value));
+        } else {
+            return false;
+        }
     }
 }
 

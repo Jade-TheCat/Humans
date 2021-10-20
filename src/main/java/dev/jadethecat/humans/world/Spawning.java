@@ -24,6 +24,9 @@ import net.minecraft.world.Heightmap;
 import net.minecraft.world.WorldAccess;
 import net.minecraft.world.biome.Biome;
 
+// Special thanks to Earth2Java https://github.com/Slexom/earth2java for parts of this code.
+// Parts of this code adapted from Earth2Java used under the MIT License.
+
 public class Spawning {
     private static Biome.Category[] humanCategories = new Biome.Category[]{
         Biome.Category.PLAINS,

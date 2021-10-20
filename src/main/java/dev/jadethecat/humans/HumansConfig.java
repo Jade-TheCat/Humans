@@ -62,6 +62,9 @@ public class HumansConfig implements ConfigData{
      */
     public float chanceToSpawnMojangsta = 0.001f;
 
+    /**
+     * How far a Human will wander when in sentry mode.
+     */
     public int humanSentryWanderRange = 50;
 
     public static class PlayerSkin {
