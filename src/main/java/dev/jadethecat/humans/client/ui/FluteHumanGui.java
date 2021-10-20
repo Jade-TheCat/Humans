@@ -87,17 +87,17 @@ public class FluteHumanGui extends LightweightGuiDescription{
         byte flags = h.getFlags();
 
         WTextField renameTextField = new WTextField(h.hasCustomName() ? h.getCustomName() : new TranslatableText("gui.humans.flute.enter_name"));
-        root.add(renameTextField, 0, 3, 10, 1);
+        root.add(renameTextField, 0, 4, 10, 1);
 
         WButton renameButton = new WButton(new TranslatableText("gui.humans.flute.rename"));
         renameButton.setOnClick(() -> {
             PacketByteBuf buf = new PacketByteBuf(ByteBufAllocator.DEFAULT.buffer());
             buf.writeUuid(h.getUuid());
             buf.writeString(renameTextField.getText());
-            ClientPlayNetworking.send(new Identifier("humans", "change_human_name"), buf);
+            ClientPlayNetworking.send(new Identifier("humans", "rename_human"), buf);
             MinecraftClient.getInstance().setScreen(null);
         });
-        root.add(renameButton, 10, 3, 4, 1);
+        root.add(renameButton, 10, 4, 4, 1);
 
         WToggleButton legacySoundToggle = new WToggleButton(new TranslatableText("gui.humans.flute.legacy_sound"));
         legacySoundToggle.setToggle(((flags >> 0) & 1) == 1);
@@ -112,7 +112,7 @@ public class FluteHumanGui extends LightweightGuiDescription{
             buf.writeByte(flags2);
             ClientPlayNetworking.send(new Identifier("humans", "update_human_flags"), buf);
         });
-        root.add(legacySoundToggle, 0, 4, 4, 1);
+        root.add(legacySoundToggle, 0, 6, 4, 1);
         WToggleButton legacyAnimToggle = new WToggleButton(new TranslatableText("gui.humans.flute.legacy_animation"));
         legacyAnimToggle.setToggle(((flags >> 1) & 1) == 1);
         legacyAnimToggle.setOnToggle(on -> {
@@ -126,7 +126,7 @@ public class FluteHumanGui extends LightweightGuiDescription{
             buf.writeByte(flags2);
             ClientPlayNetworking.send(new Identifier("humans", "update_human_flags"), buf);
         });
-        root.add(legacyAnimToggle, 0, 5, 4, 1);
+        root.add(legacyAnimToggle, 0, 7, 4, 1);
         WToggleButton slimSkinToggle = new WToggleButton(new TranslatableText("gui.humans.flute.slim_skin"));
         slimSkinToggle.setToggle(((flags >> 2) & 1) == 1);
         slimSkinToggle.setOnToggle(on -> {
@@ -140,7 +140,7 @@ public class FluteHumanGui extends LightweightGuiDescription{
             buf.writeByte(flags2);
             ClientPlayNetworking.send(new Identifier("humans", "update_human_flags"), buf);
         });
-        root.add(slimSkinToggle, 0, 6, 4, 1);
+        root.add(slimSkinToggle, 0, 8, 4, 1);
 
         WToggleButton skinLockToggle = new WToggleButton(new TranslatableText("gui.humans.flute.skin_lock"));
         skinLockToggle.setToggle(((flags >> 3) & 1) == 1);
@@ -155,7 +155,7 @@ public class FluteHumanGui extends LightweightGuiDescription{
             buf.writeByte(flags2);
             ClientPlayNetworking.send(new Identifier("humans", "update_human_flags"), buf);
         });
-        root.add(skinLockToggle, 0, 7, 4, 1);
+        root.add(skinLockToggle, 0, 9, 4, 1);
 
         root.validate(this);
     }

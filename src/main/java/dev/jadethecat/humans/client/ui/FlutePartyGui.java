@@ -35,53 +35,12 @@ public class FlutePartyGui extends LightweightGuiDescription {
     public FlutePartyGui(PlayerEntity player, List<HumanEntity> humans) {
         WGridPanel root = new WGridPanel();
         setRootPanel(root);
-        root.setSize(252, 234);
+        root.setSize(11*18, 13*18);
         root.setInsets(Insets.ROOT_PANEL);
         WLabel title = new WLabel(new TranslatableText("gui.humans.flute.party_management"))
                             .setHorizontalAlignment(HorizontalAlignment.CENTER);
-        root.add(title, 6, 0, 2, 1);
-        WButton summonPartyButton = new WButton(new TranslatableText("gui.humans.flute.summon_party"));
-        List<UUID> party = HumansComponents.PARTY.get(player).getList();
-        summonPartyButton.setOnClick(() -> {
-            PacketByteBuf buf = new PacketByteBuf(ByteBufAllocator.DEFAULT.buffer());
-            buf.writeInt(party.size());
-            for (UUID u : party) {
-                buf.writeUuid(u);
-            }
-            ClientPlayNetworking.send(new Identifier("humans", "party_teleport"), buf);
-            MinecraftClient client = MinecraftClient.getInstance();
-            client.player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, SoundCategory.PLAYERS, 100.0f, 1.5f);
-            client.setScreen(null);
-        });
-        root.add(summonPartyButton, 0, 10, 4, 1);
+        root.add(title, 0, 0, 13, 1);
 
-        WButton partyStayButton = new WButton(new TranslatableText("gui.humans.flute.party_stay"));
-        partyStayButton.setOnClick(() -> {
-            PacketByteBuf buf = new PacketByteBuf(ByteBufAllocator.DEFAULT.buffer());
-            buf.writeInt(party.size());
-            for (UUID u : party) {
-                buf.writeUuid(u);
-            }
-            ClientPlayNetworking.send(new Identifier("humans", "party_stay"), buf);
-            MinecraftClient client = MinecraftClient.getInstance();
-            client.player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, SoundCategory.PLAYERS, 100.0f, 0.5f);
-            client.setScreen(null);
-        });
-        root.add(partyStayButton, 5, 10, 4, 1);
-        
-        WButton partyFollowButton = new WButton(new TranslatableText("gui.humans.flute.party_follow"));
-        partyFollowButton.setOnClick(() -> {
-            PacketByteBuf buf = new PacketByteBuf(ByteBufAllocator.DEFAULT.buffer());
-            buf.writeInt(party.size());
-            for (UUID u : party) {
-                buf.writeUuid(u);
-            }
-            ClientPlayNetworking.send(new Identifier("humans", "party_follow"), buf);
-            MinecraftClient client = MinecraftClient.getInstance();
-            client.player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, SoundCategory.PLAYERS, 100.0f, 1.5f);
-            client.setScreen(null);
-        });
-        root.add(partyFollowButton, 10, 10, 4, 1);
 
         BiConsumer<HumanEntity, HumanListItem> configurator = (HumanEntity e, HumanListItem item) -> {
             MinecraftClient client = MinecraftClient.getInstance();
@@ -105,7 +64,51 @@ public class FlutePartyGui extends LightweightGuiDescription {
         };
         WListPanel<HumanEntity, HumanListItem> humanList = new WListPanel<>(humans, HumanListItem::new, configurator);
         humanList.setListItemHeight(2*18);
-        root.add(humanList, 0, 3, 14, 6);
+        root.add(humanList, 0, 2, 13, 6);
+
+        WButton summonPartyButton = new WButton(new TranslatableText("gui.humans.flute.summon_party"));
+        List<UUID> party = HumansComponents.PARTY.get(player).getList();
+        summonPartyButton.setOnClick(() -> {
+            PacketByteBuf buf = new PacketByteBuf(ByteBufAllocator.DEFAULT.buffer());
+            buf.writeInt(party.size());
+            for (UUID u : party) {
+                buf.writeUuid(u);
+            }
+            ClientPlayNetworking.send(new Identifier("humans", "party_teleport"), buf);
+            MinecraftClient client = MinecraftClient.getInstance();
+            client.player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, SoundCategory.PLAYERS, 100.0f, 1.5f);
+            client.setScreen(null);
+        });
+        root.add(summonPartyButton, 0, 9, 13, 1);
+
+        WButton partyStayButton = new WButton(new TranslatableText("gui.humans.flute.party_stay"));
+        partyStayButton.setOnClick(() -> {
+            PacketByteBuf buf = new PacketByteBuf(ByteBufAllocator.DEFAULT.buffer());
+            buf.writeInt(party.size());
+            for (UUID u : party) {
+                buf.writeUuid(u);
+            }
+            ClientPlayNetworking.send(new Identifier("humans", "party_stay"), buf);
+            MinecraftClient client = MinecraftClient.getInstance();
+            client.player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, SoundCategory.PLAYERS, 100.0f, 0.5f);
+            client.setScreen(null);
+        });
+        root.add(partyStayButton, 0, 11, 6, 1);
+        
+        WButton partyFollowButton = new WButton(new TranslatableText("gui.humans.flute.party_follow"));
+        partyFollowButton.setOnClick(() -> {
+            PacketByteBuf buf = new PacketByteBuf(ByteBufAllocator.DEFAULT.buffer());
+            buf.writeInt(party.size());
+            for (UUID u : party) {
+                buf.writeUuid(u);
+            }
+            ClientPlayNetworking.send(new Identifier("humans", "party_follow"), buf);
+            MinecraftClient client = MinecraftClient.getInstance();
+            client.player.playSound(SoundEvents.BLOCK_NOTE_BLOCK_FLUTE, SoundCategory.PLAYERS, 100.0f, 1.5f);
+            client.setScreen(null);
+        });
+        root.add(partyFollowButton, 7, 11, 6, 1);
+
         root.validate(this);
     }
 }

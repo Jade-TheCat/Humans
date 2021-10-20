@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import dev.jadethecat.humans.entity.HumanEntity;
 import dev.jadethecat.humans.item.FluteItem;
 import dev.jadethecat.humans.network.HumansServerPlay;
+import dev.jadethecat.humans.world.Spawning;
 import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.serializer.Toml4jConfigSerializer;
 import net.fabricmc.api.ModInitializer;
@@ -13,6 +14,7 @@ import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.fabricmc.fabric.api.tag.TagFactory;
+import net.minecraft.block.Block;
 import net.minecraft.entity.EntityDimensions;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
@@ -41,6 +43,7 @@ public class Humans implements ModInitializer {
 	public static final Tag<Item> HUMAN_LIKED_ITEMS = TagFactory.ITEM.create(new Identifier("humans", "human_liked_items"));
 	public static final Tag<Item> HUMAN_FOOD = TagFactory.ITEM.create(new Identifier("humans", "human_food"));
 	public static final Tag<EntityType<?>> HUMAN_IGNORED_MOBS = TagFactory.ENTITY_TYPE.create(new Identifier("humans", "human_ignored_mobs"));
+	public static final Tag<Block> HUMAN_SPAWNABLE = TagFactory.BLOCK.create(new Identifier("humans", "human_spawnable"));
 
 	// Items
 	public static final Item FLUTE = new FluteItem();
@@ -59,5 +62,6 @@ public class Humans implements ModInitializer {
 		AutoConfig.register(HumansConfig.class, Toml4jConfigSerializer::new);
 		HumansServerPlay.initReceiviers();
 		HumanEntity.initStates();
+		Spawning.addHumanToBiomes();
 	}
 }

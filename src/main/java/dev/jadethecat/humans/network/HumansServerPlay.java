@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.LiteralText;
 import net.minecraft.util.Identifier;
 
 public class HumansServerPlay {
@@ -91,6 +92,19 @@ public class HumansServerPlay {
                 Entity e = player.getServerWorld().getEntity(uuid);
                 if (e instanceof HumanEntity) {
                     ((HumanEntity)e).setFlags(b);
+                }
+            });
+        });
+        ServerPlayConnectionEvents.INIT.register((handler, server) -> {
+            ServerPlayNetworking.registerReceiver(handler, new Identifier("humans", "rename_human"), 
+            (server2, player, handler2, buf, responseSender) -> {
+                UUID uuid = buf.readUuid();
+                String newName = buf.readString();
+                Entity e = player.getServerWorld().getEntity(uuid);
+                Humans.LOGGER.info("Renaming entity to " + newName);
+                if (e instanceof HumanEntity) {
+                    HumanEntity h = (HumanEntity)e;
+                    h.setCustomName(new LiteralText(newName));
                 }
             });
         });

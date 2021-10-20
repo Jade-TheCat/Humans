@@ -37,5 +37,7 @@
     "gui.humans.flute.legacy_sound": "Uses Legacy \"Oof\" Hurt Sound",
     "gui.humans.flute.legacy_animation": "Uses Legacy \"Flailing Arms\" Walk Animation",
     "gui.humans.flute.slim_skin": "Uses a Slim Skin",
-    "gui.humans.flute.skin_lock": "Prevent Changes to this Human's Skin"
+    "gui.humans.flute.skin_lock": "Prevent Changes to this Human's Skin",
+    "gui.humans.flute.enter_name": "Enter new name...",
+    "gui.humans.flute.rename": "Rename"
 }

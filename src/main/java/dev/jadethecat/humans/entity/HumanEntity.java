@@ -182,8 +182,8 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 
     public static void initStates() {
         humanStates.add(FOLLOWING_STATE);
-        humanStates.add(SENTRY_STATE);
         humanStates.add(WAITING_STATE);
+        humanStates.add(SENTRY_STATE);
     }
 
     @Override

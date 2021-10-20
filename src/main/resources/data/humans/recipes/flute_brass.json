@@ -1,0 +1,19 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "pattern": [
+        "#R#",
+        "# #",
+        "# #"
+    ],
+    "key": {
+        "#": {
+            "tag": "c:brass_nuggets"
+        },
+        "R": {
+            "item": "minecraft:sugar_cane"
+        }
+    },
+    "result": {
+        "item": "humans:flute"
+    }
+}
