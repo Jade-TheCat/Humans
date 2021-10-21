@@ -111,6 +111,7 @@ public class HumansServerPlay {
 		});
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             PlayerEntity p = handler.player.getEntityWorld().getPlayerByUuid(handler.player.getUuid());
+            if (HumansComponents.PARTY.get(p) == null) return;
             HumansComponents.PARTY.get(p).getList().forEach(human -> {
                 Entity e = handler.player.getServerWorld().getEntity(human);
                 if (e instanceof HumanEntity) {
