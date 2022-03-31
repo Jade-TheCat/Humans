@@ -7,6 +7,7 @@ import java.util.UUID;
 import dev.jadethecat.humans.Humans;
 import dev.jadethecat.humans.components.HumansComponents;
 import dev.jadethecat.humans.entity.HumanEntity;
+import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
@@ -121,6 +122,23 @@ public class HumansServerPlay {
                     HumansComponents.PARTY.get(p).remove(human);
                 }
             });
+        });
+        ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> {
+            PlayerEntity p = newPlayer.getEntityWorld().getPlayerByUuid(newPlayer.getUuid());
+            if (HumansComponents.PARTY.get(p) != null) {
+                List<UUID> party = HumansComponents.PARTY.get(p).getList();
+                for (UUID uuid : party) {
+                    Entity e = newPlayer.getServerWorld().getEntity(uuid);
+                    if (e instanceof HumanEntity) {
+                        HumanEntity h = (HumanEntity)e;
+                        if (h.getBestFriend().isPresent() && h.getBestFriend().get() != newPlayer.getUuid()) {
+                            party.remove(uuid);
+                        }
+                    } else {
+                        party.remove(uuid);
+                    }
+                }
+            }
         });
     }
 }
