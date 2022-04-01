@@ -17,7 +17,8 @@ public class HumansConfig implements ConfigData{
         new PlayerSkin("KitsuneAlex", false),
         new PlayerSkin("LemmaEOF", false),
         new PlayerSkin("UpcraftLP", false),
-        new PlayerSkin("shedaniel", false)
+        new PlayerSkin("shedaniel", false),
+        new PlayerSkin("Pyrofab", false)
     ));
 
     /**
