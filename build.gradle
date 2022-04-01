@@ -1,11 +1,11 @@
 plugins {
-	id 'fabric-loom' version '0.9-SNAPSHOT'
+	id 'fabric-loom' version '0.11-SNAPSHOT'
 	id 'maven-publish'
 	id 'org.ajoberstar.grgit' version '4.1.0'
 }
 
-sourceCompatibility = JavaVersion.VERSION_16
-targetCompatibility = JavaVersion.VERSION_16
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
 
 archivesBaseName = project.archives_base_name
 version = "${project.mod_version}+${getVersionMetadata()}+${project.minecraft_version}"
@@ -34,20 +34,20 @@ dependencies {
 	//Fabric API
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 	//Cloth Config + ModMenu
-	modApi("me.shedaniel.cloth:cloth-config-fabric:5.0.38") {        exclude(group: "net.fabricmc.fabric-api")    }
-	modImplementation "com.terraformersmc:modmenu:2.0.14"
+	modApi("me.shedaniel.cloth:cloth-config-fabric:6.2.57") {        exclude(group: "net.fabricmc.fabric-api")    }
+	modImplementation "com.terraformersmc:modmenu:3.1.0"
 	implementation 'com.moandjiezana.toml:toml4j:0.7.2'
 	include "com.moandjiezana.toml:toml4j:0.7.2"
 
 	//LibGUI
-	modImplementation include("io.github.cottonmc:LibGui:4.2.1+1.17.1")
+	modImplementation include("io.github.cottonmc:LibGui:5.3.2+1.18.2")
 
 	//Cardinal Components
-	modApi include("io.github.onyxstudios.Cardinal-Components-API:cardinal-components-base:3.1.1")
-	modImplementation include("io.github.onyxstudios.Cardinal-Components-API:cardinal-components-entity:3.1.1")
+	modApi include("dev.onyxstudios.cardinal-components-api:cardinal-components-base:4.1.4")
+	modImplementation include("dev.onyxstudios.cardinal-components-api:cardinal-components-entity:4.1.4")
 
 	//Trinkets
-	modImplementation "dev.emi:trinkets:3.0.4"
+	modImplementation "dev.emi:trinkets:3.3.0"
 }
 
 processResources {
@@ -64,9 +64,7 @@ tasks.withType(JavaCompile).configureEach {
 	// see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
 	// If Javadoc is generated, this must be specified in that task too.
 	it.options.encoding = "UTF-8"
-
-	// Minecraft 1.17 (21w19a) upwards uses Java 16.
-	it.options.release = 16
+	it.options.release = 17
 }
 
 java {

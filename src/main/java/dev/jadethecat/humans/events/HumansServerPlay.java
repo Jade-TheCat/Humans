@@ -27,7 +27,7 @@ public class HumansServerPlay {
                 List<HumanEntity> entitiesToTeleport = new ArrayList<>();
 				for (int i = 0; i < entityCount; i++) {
 					UUID u = buf.readUuid();
-                    Entity e = player.getServerWorld().getEntity(u);
+                    Entity e = player.getWorld().getEntity(u);
                     if (e instanceof HumanEntity) {
                         entitiesToTeleport.add((HumanEntity)e);
                     }
@@ -43,7 +43,7 @@ public class HumansServerPlay {
                 List<HumanEntity> entitiesToWait = new ArrayList<>();
 				for (int i = 0; i < entityCount; i++) {
 					UUID u = buf.readUuid();
-                    Entity e = player.getServerWorld().getEntity(u);
+                    Entity e = player.getWorld().getEntity(u);
                     if (e instanceof HumanEntity) {
                         entitiesToWait.add((HumanEntity)e);
                     }
@@ -58,7 +58,7 @@ public class HumansServerPlay {
                 List<HumanEntity> entitiesToFollow = new ArrayList<>();
 				for (int i = 0; i < entityCount; i++) {
 					UUID u = buf.readUuid();
-                    Entity e = player.getServerWorld().getEntity(u);
+                    Entity e = player.getWorld().getEntity(u);
                     if (e instanceof HumanEntity) {
                         entitiesToFollow.add((HumanEntity)e);
                     }
@@ -71,7 +71,7 @@ public class HumansServerPlay {
 			(server2, player, handler2, buf, responseSender) -> {
 				UUID uuid = buf.readUuid();
                 String newState = buf.readString();
-                Entity e = player.getServerWorld().getEntity(uuid);
+                Entity e = player.getWorld().getEntity(uuid);
                 if (e instanceof HumanEntity) {
                     HumanEntity h = (HumanEntity)e;
                     h.setState(newState);
@@ -93,7 +93,7 @@ public class HumansServerPlay {
             (server2, player, handler2, buf, responseSender) -> {
                 UUID uuid = buf.readUuid();
                 byte b = buf.readByte();
-                Entity e = player.getServerWorld().getEntity(uuid);
+                Entity e = player.getWorld().getEntity(uuid);
                 if (e instanceof HumanEntity) {
                     ((HumanEntity)e).setFlags(b);
                 }
@@ -102,7 +102,7 @@ public class HumansServerPlay {
             (server2, player, handler2, buf, responseSender) -> {
                 UUID uuid = buf.readUuid();
                 String newName = buf.readString();
-                Entity e = player.getServerWorld().getEntity(uuid);
+                Entity e = player.getWorld().getEntity(uuid);
                 Humans.LOGGER.info("Renaming entity to " + newName);
                 if (e instanceof HumanEntity) {
                     HumanEntity h = (HumanEntity)e;
@@ -114,7 +114,7 @@ public class HumansServerPlay {
             PlayerEntity p = handler.player.getEntityWorld().getPlayerByUuid(handler.player.getUuid());
             if (HumansComponents.PARTY.get(p) == null) return;
             HumansComponents.PARTY.get(p).getList().forEach(human -> {
-                Entity e = handler.player.getServerWorld().getEntity(human);
+                Entity e = handler.player.getWorld().getEntity(human);
                 if (e instanceof HumanEntity) {
                     HumanEntity h = ((HumanEntity)e);
                     h.setState(HumanEntity.WAITING_STATE);
@@ -128,7 +128,7 @@ public class HumansServerPlay {
             if (HumansComponents.PARTY.get(p) != null) {
                 List<UUID> party = HumansComponents.PARTY.get(p).getList();
                 for (UUID uuid : party) {
-                    Entity e = newPlayer.getServerWorld().getEntity(uuid);
+                    Entity e = newPlayer.getWorld().getEntity(uuid);
                     if (e instanceof HumanEntity) {
                         HumanEntity h = (HumanEntity)e;
                         if (h.getBestFriend().isPresent() && h.getBestFriend().get() != newPlayer.getUuid()) {

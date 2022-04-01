@@ -12,7 +12,13 @@ public class HumansConfig implements ConfigData{
     /**
      * Names which Humans can spawn with.
      */
-    public List<PlayerSkin> spawnableNames = new ArrayList<>(Arrays.asList(new PlayerSkin("Jade_TheCat", true), new PlayerSkin("KitsuneAlex", false)));
+    public List<PlayerSkin> spawnableNames = new ArrayList<>(Arrays.asList(
+        new PlayerSkin("Jade_TheCat", true), 
+        new PlayerSkin("KitsuneAlex", false),
+        new PlayerSkin("LemmaEOF", false),
+        new PlayerSkin("UpcraftLP", false),
+        new PlayerSkin("shedaniel", false)
+    ));
 
     /**
      * Mojangstas Humans can spawn as.

@@ -20,6 +20,7 @@ import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.SpawnRestriction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.registry.BuiltinRegistries;
+import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.WorldAccess;
 import net.minecraft.world.biome.Biome;
@@ -41,7 +42,7 @@ public class Spawning {
         List<String> biomes = new ArrayList<>(Collections.EMPTY_LIST);
         for (String category : categories) {
             BuiltinRegistries.BIOME.forEach(biome -> {
-                if (biome.getCategory().toString().equalsIgnoreCase(category)) {
+                if (Biome.getCategory(RegistryEntry.of(biome)).toString().equalsIgnoreCase(category)) {
                     biomes.add(BuiltinRegistries.BIOME.getId(biome).toString());
                 }
             });

@@ -16,7 +16,6 @@ import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
-import net.fabricmc.fabric.api.tag.TagFactory;
 import net.minecraft.block.Block;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.Entity;
@@ -29,6 +28,7 @@ import net.minecraft.item.SpawnEggItem;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.tag.Tag;
+import net.minecraft.tag.TagKey;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
@@ -48,10 +48,10 @@ public class Humans implements ModInitializer {
 	public static SoundEvent LEGACY_HURT_SOUND_EVENT = new SoundEvent(LEGACY_HURT_SOUND_ID);
 
 	// Tags
-	public static final Tag<Item> HUMAN_LIKED_ITEMS = TagFactory.ITEM.create(new Identifier("humans", "human_liked_items"));
-	public static final Tag<Item> HUMAN_FOOD = TagFactory.ITEM.create(new Identifier("humans", "human_food"));
-	public static final Tag<EntityType<?>> HUMAN_IGNORED_MOBS = TagFactory.ENTITY_TYPE.create(new Identifier("humans", "human_ignored_mobs"));
-	public static final Tag<Block> HUMAN_SPAWNABLE = TagFactory.BLOCK.create(new Identifier("humans", "human_spawnable"));
+	public static final TagKey<Item> HUMAN_LIKED_ITEMS = TagKey.of(Registry.ITEM_KEY, new Identifier("humans", "human_liked_items"));
+	public static final TagKey<Item> HUMAN_FOOD = TagKey.of(Registry.ITEM_KEY, new Identifier("humans", "human_food"));
+	public static final TagKey<EntityType<?>> HUMAN_IGNORED_MOBS = TagKey.of(Registry.ENTITY_TYPE_KEY, new Identifier("humans", "human_ignored_mobs"));
+	public static final TagKey<Block> HUMAN_SPAWNABLE = TagKey.of(Registry.BLOCK_KEY, new Identifier("humans", "human_spawnable"));
 
 	// Items
 	public static final Item FLUTE = new FluteItem();

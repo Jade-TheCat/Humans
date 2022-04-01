@@ -57,7 +57,7 @@ public class FollowBestFriendGoal extends Goal {
     }
 
     public void tick() {
-        this.human.getLookControl().lookAt(this.target, 10.0F, (float)this.human.getLookPitchSpeed());
+        this.human.getLookControl().lookAt(this.target, 10.0F, (float)this.human.getMaxLookPitchChange());
         if (--this.updateCountdownTicks <= 0) {
             this.updateCountdownTicks = 10;
             if (!this.human.isLeashed() && !this.human.hasVehicle()) {

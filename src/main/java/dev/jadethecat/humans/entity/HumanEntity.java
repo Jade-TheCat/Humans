@@ -25,7 +25,7 @@ import net.minecraft.entity.EntityData;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.ai.goal.FollowTargetGoal;
+import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.MeleeAttackGoal;
@@ -93,9 +93,9 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 
     static {
         // SKIN_PROFILE is the GameProfile which contains the Human's skin.
-        SKIN_PROFILE = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.TAG_COMPOUND);
+        SKIN_PROFILE = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.NBT_COMPOUND);
         // AFFINITY tracks the Human's affinity with players.
-        AFFINITY = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.TAG_COMPOUND);
+        AFFINITY = DataTracker.registerData(HumanEntity.class, TrackedDataHandlerRegistry.NBT_COMPOUND);
         // ANGER_TIME_RANGE is used for the anger mechanics.
 		ANGER_TIME_RANGE = TimeHelper.betweenSeconds(20, 39);
         // BEST_FRIEND tracks which player the Human follows and listens to.
@@ -195,9 +195,9 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
 		this.goalSelector.add(3, new LookAroundGoal(this));
 
         this.targetSelector.add(1, new RevengeGoal(this, new Class[0]));
-        this.targetSelector.add(2, new FollowTargetGoal<PlayerEntity>(this, PlayerEntity.class, 10, true, false, this::shouldAngerAt));
-		this.targetSelector.add(2, new FollowTargetGoal<MobEntity>(this, MobEntity.class, 5, false, false, (entity) -> {
-			return entity instanceof Monster && !Humans.HUMAN_IGNORED_MOBS.contains(entity.getType()) && !entity.isSwimming();
+        this.targetSelector.add(2, new ActiveTargetGoal<PlayerEntity>(this, PlayerEntity.class, 10, true, false, this::shouldAngerAt));
+		this.targetSelector.add(2, new ActiveTargetGoal<MobEntity>(this, MobEntity.class, 5, false, false, (entity) -> {
+			return entity instanceof Monster && !entity.getType().isIn(Humans.HUMAN_IGNORED_MOBS) && !entity.isSwimming();
 		}));
     }
 
@@ -277,7 +277,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
                 return ActionResult.FAIL;
             } else if (item == Items.POPPY) {
                 return ActionResult.SUCCESS;
-            } else if (Humans.HUMAN_LIKED_ITEMS.contains(item)) {
+            } else if (stack.isIn(Humans.HUMAN_LIKED_ITEMS)) {
                 return ActionResult.CONSUME;
             } else if (item == Humans.FLUTE 
                         && this.getBestFriend().isPresent() 
@@ -321,7 +321,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
             } else if (item == Items.POPPY) {
                 this.setHomePos(this.getBlockPos());
                 return ActionResult.SUCCESS;
-            } else if (Humans.HUMAN_LIKED_ITEMS.contains(item)) {
+            } else if (stack.isIn(Humans.HUMAN_LIKED_ITEMS)) {
                 tryEquip(stack);
                 this.addAffinity(player.getUuid(), rankLikedItem(item));
                 stack.setCount(stack.getCount() - 1);
@@ -703,7 +703,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
     @Override
     protected void loot(ItemEntity item) {
         ItemStack stack = item.getStack();
-        if (item.getThrower() != null && Humans.HUMAN_LIKED_ITEMS.contains(stack.getItem())) {
+        if (item.getThrower() != null && stack.isIn(Humans.HUMAN_LIKED_ITEMS)) {
             this.addAffinity(item.getThrower(), item.getStack().getCount() * rankLikedItem(item.getStack().getItem()));
         }
         super.loot(item);
@@ -714,7 +714,7 @@ public class HumanEntity extends PathAwareEntity implements Angerable {
      */
     @Override
     public boolean tryEquip(ItemStack equipment) {
-        if (this.canPickupItem(equipment) && Humans.HUMAN_FOOD.contains(equipment.getItem())) {
+        if (this.canPickupItem(equipment) && equipment.isIn(Humans.HUMAN_FOOD)) {
             if (equipment.getItem().getFoodComponent() != null) {
                 this.heal(equipment.getItem().getFoodComponent().getHunger());
                 for (Pair<StatusEffectInstance, Float> effect : equipment.getItem().getFoodComponent().getStatusEffects()) {

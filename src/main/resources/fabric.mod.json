@@ -37,11 +37,15 @@
   ],
 
   "depends": {
-    "fabricloader": ">=0.11.3",
+    "fabricloader": ">=0.13.3",
     "fabric": "*",
-    "minecraft": "1.17.x",
-    "java": ">=16",
-    "cloth-config2": "^5.0.38"
+    "minecraft": "^1.18.2 <1.19",
+    "java": ">=17",
+    "cloth-config2": "^6.2.57",
+    "libgui": "^5.3.2",
+    "cardinal-components-base": "^4.1.4",
+    "cardinal-components-entity": "^4.1.4",
+    "trinkets": "^3.3.0"
   },
   "suggests": {
     "modmenu": "^2.0.14"
